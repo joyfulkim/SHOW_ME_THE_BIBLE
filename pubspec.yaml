@@ -1,0 +1,67 @@
+name: show_me_bible
+description: "실시간 성경 암송 서바이벌 앱 - SHOW ME THE BIBLE"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Supabase
+  supabase_flutter: ^2.8.1
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^13.2.0
+
+  # String Similarity (Levenshtein)
+  string_similarity: ^2.0.0
+
+  # Secure Storage
+  flutter_secure_storage: ^9.0.0
+
+  # Environment Variables
+  flutter_dotenv: ^5.1.0
+
+  # UI
+  google_fonts: ^6.2.1
+  gap: ^3.0.1
+  cupertino_icons: ^1.0.8
+
+  # STT & Permissions
+  speech_to_text: ^7.3.0
+  flutter_tts: 4.0.2
+  permission_handler: ^11.3.1
+  shared_preferences: ^2.5.3
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.0
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
+  flutter_launcher_icons: ^0.13.1
+  json_serializable: ^6.9.0
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  web:
+    generate: true
+    image_path: "assets/images/icon.png"
+  image_path: "assets/images/icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/images/
