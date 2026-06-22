@@ -47,7 +47,7 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   build_runner: ^2.4.9
   riverpod_generator: ^2.4.0
-  custom_lint: ^0.6.4
+  custom_lint: ^0.7.6
   riverpod_lint: ^2.3.10
   flutter_launcher_icons: ^0.13.1
   json_serializable: ^6.9.0
@@ -63,5 +63,4 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
   assets:
-    - .env
     - assets/images/

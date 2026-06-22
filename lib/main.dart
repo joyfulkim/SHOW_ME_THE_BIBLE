@@ -129,7 +129,7 @@ class AppTheme {
           labelStyle: TextStyle(color: kNavy),
         ),
         // Card
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: kSurface,
           elevation: 2,
           shadowColor: Colors.black12,
