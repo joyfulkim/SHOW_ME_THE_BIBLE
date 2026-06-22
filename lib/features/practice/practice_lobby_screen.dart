@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/competition_verses.dart';
 import '../../core/ui_utils.dart';
 import '../../main.dart';
@@ -28,6 +29,14 @@ class PracticeLobbyScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('혼자 연습하기'),
           centerTitle: true,
+          actions: [
+            TextButton.icon(
+              onPressed: () => context.push('/settings'),
+              icon: const Icon(Icons.settings_voice_rounded, size: 18),
+              label: const Text('음성설정'),
+            ),
+            const Gap(8),
+          ],
         ),
         body: ListView.separated(
           padding: const EdgeInsets.all(20),
@@ -63,7 +72,7 @@ class PracticeLobbyScreen extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: AppTheme.kText.withOpacity(0.7),
+                            color: AppTheme.kText.withValues(alpha: 0.7),
                           ),
                         ),
                       ),

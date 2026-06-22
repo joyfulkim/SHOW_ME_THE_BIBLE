@@ -137,6 +137,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
               session: session,
               onManage: () => setState(() => _isManaging = true),
             ),
+            const Gap(20),
+            _AdminSubmissionBoard(session: session, sessionId: session.id),
             if (session.isSpeedMode) ...[
               const Gap(20),
               const _ParticipantProgressSummary(),
@@ -1144,6 +1146,398 @@ class _ParticipantProgressSummary extends ConsumerWidget {
       },
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _AdminSubmissionBoard extends ConsumerWidget {
+  const _AdminSubmissionBoard({
+    required this.session,
+    required this.sessionId,
+  });
+
+  final GameSession session;
+  final String sessionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final submissionsAsync = ref.watch(allSubmissionsStreamProvider(sessionId));
+
+    return submissionsAsync.when(
+      data: (submissions) {
+        final rankings = _buildRankings(submissions);
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFCDD0E3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.fact_check_outlined,
+                      size: 20, color: AppTheme.kNavy),
+                  const Gap(8),
+                  const Expanded(
+                    child: Text(
+                      '참가자 암송 현황',
+                      style: TextStyle(
+                        color: AppTheme.kNavy,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () =>
+                        context.push('/leaderboard?sessionId=$sessionId'),
+                    icon: const Icon(Icons.leaderboard_outlined, size: 18),
+                    label: const Text('전체보기'),
+                  ),
+                ],
+              ),
+              const Gap(12),
+              if (rankings.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  decoration: BoxDecoration(
+                    color: AppTheme.kSurface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    '아직 참가자의 암송 입력이 없습니다.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black45),
+                  ),
+                )
+              else ...[
+                Row(
+                  children: [
+                    _SummaryPill(
+                      label: '참가자',
+                      value: '${rankings.length}명',
+                    ),
+                    const Gap(8),
+                    _SummaryPill(
+                      label: '제출',
+                      value: '${submissions.where((s) => s.isFinal).length}건',
+                    ),
+                    const Gap(8),
+                    _SummaryPill(
+                      label: '라운드',
+                      value:
+                          '${session.currentRound.clamp(1, session.totalRounds)} / ${session.totalRounds}',
+                    ),
+                  ],
+                ),
+                const Gap(14),
+                for (final ranking in rankings.take(6)) ...[
+                  _AdminSubmissionTile(
+                    ranking: ranking,
+                    totalRounds: session.totalRounds,
+                    onTap: () {
+                      if (session.isSpeedMode) {
+                        context.push(
+                          '/user-result?sessionId=$sessionId&targetUserId=${ranking.userId}',
+                        );
+                      } else {
+                        context.push(
+                          '/grading?submissionId=${ranking.latestSubmission.id}&sessionId=$sessionId&roundNumber=${ranking.latestSubmission.roundNumber}',
+                        );
+                      }
+                    },
+                  ),
+                  if (ranking != rankings.take(6).last) const Gap(10),
+                ],
+              ],
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFCDD0E3)),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Text(
+          '참가자 현황을 불러오지 못했습니다: $error',
+          style: TextStyle(color: Colors.red.shade800),
+        ),
+      ),
+    );
+  }
+
+  List<_ParticipantRanking> _buildRankings(List<Submission> submissions) {
+    final grouped = <String, List<Submission>>{};
+    for (final submission in submissions) {
+      grouped.putIfAbsent(submission.userId, () => []).add(submission);
+    }
+
+    final rankings = grouped.entries.map((entry) {
+      final userSubmissions = entry.value
+        ..sort((a, b) {
+          final aTime = a.submittedAt ?? a.createdAt;
+          final bTime = b.submittedAt ?? b.createdAt;
+          return bTime.compareTo(aTime);
+        });
+      final finalSubmissions =
+          userSubmissions.where((submission) => submission.isFinal).toList();
+      final latest = userSubmissions.first;
+      final totalScore = finalSubmissions.isEmpty
+          ? latest.accuracyScore
+          : finalSubmissions.fold<double>(
+              0,
+              (sum, submission) => sum + submission.accuracyScore,
+            );
+      final averageScore = finalSubmissions.isEmpty
+          ? latest.accuracyScore
+          : totalScore / finalSubmissions.length;
+
+      return _ParticipantRanking(
+        userId: entry.key,
+        profile: latest.profile,
+        completedRounds: finalSubmissions.length,
+        totalScore: totalScore,
+        averageScore: averageScore,
+        latestSubmission: latest,
+      );
+    }).toList()
+      ..sort((a, b) {
+        if (b.totalScore != a.totalScore) {
+          return b.totalScore.compareTo(a.totalScore);
+        }
+        if (b.completedRounds != a.completedRounds) {
+          return b.completedRounds.compareTo(a.completedRounds);
+        }
+        final aTime =
+            a.latestSubmission.submittedAt ?? a.latestSubmission.createdAt;
+        final bTime =
+            b.latestSubmission.submittedAt ?? b.latestSubmission.createdAt;
+        return aTime.compareTo(bTime);
+      });
+
+    for (var index = 0; index < rankings.length; index++) {
+      rankings[index] = rankings[index].copyWith(rank: index + 1);
+    }
+
+    return rankings;
+  }
+}
+
+class _AdminSubmissionTile extends StatelessWidget {
+  const _AdminSubmissionTile({
+    required this.ranking,
+    required this.totalRounds,
+    required this.onTap,
+  });
+
+  final _ParticipantRanking ranking;
+  final int totalRounds;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final latest = ranking.latestSubmission;
+    final nickname = ranking.profile?.nickname ?? '참가자';
+    final rankColor = ranking.rank <= 3 ? AppTheme.kGold : AppTheme.kNavy;
+
+    return Material(
+      color: AppTheme.kSurface.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: rankColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${ranking.rank}',
+                      style: TextStyle(
+                        color: rankColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Gap(10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nickname,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.kNavy,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Gap(2),
+                        Text(
+                          '최근 ${latest.roundNumber}라운드 · ${latest.isFinal ? "최종 제출" : "작성 중"}',
+                          style: const TextStyle(
+                              color: Colors.black45, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${ranking.averageScore.toStringAsFixed(1)}%',
+                        style: const TextStyle(
+                          color: Color(0xFF1E7D4F),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${ranking.completedRounds} / $totalRounds 완료',
+                        style: const TextStyle(
+                            color: Colors.black45, fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (latest.content.trim().isNotEmpty) ...[
+                const Gap(10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE0E3F0)),
+                  ),
+                  child: Text(
+                    latest.content,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryPill extends StatelessWidget {
+  const _SummaryPill({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppTheme.kNavyBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFCDD0E3)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppTheme.kNavy,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Gap(2),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.black45, fontSize: 10),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ParticipantRanking {
+  const _ParticipantRanking({
+    required this.userId,
+    required this.profile,
+    required this.completedRounds,
+    required this.totalScore,
+    required this.averageScore,
+    required this.latestSubmission,
+    this.rank = 0,
+  });
+
+  final String userId;
+  final Profile? profile;
+  final int completedRounds;
+  final double totalScore;
+  final double averageScore;
+  final Submission latestSubmission;
+  final int rank;
+
+  _ParticipantRanking copyWith({int? rank}) {
+    return _ParticipantRanking(
+      userId: userId,
+      profile: profile,
+      completedRounds: completedRounds,
+      totalScore: totalScore,
+      averageScore: averageScore,
+      latestSubmission: latestSubmission,
+      rank: rank ?? this.rank,
     );
   }
 }

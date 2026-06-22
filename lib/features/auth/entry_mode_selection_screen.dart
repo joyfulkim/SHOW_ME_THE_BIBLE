@@ -50,7 +50,6 @@ class EntryModeSelectionScreen extends StatelessWidget {
                                 onJoin: () => context.push('/login'),
                                 onPractice: () =>
                                     context.push('/practice-lobby'),
-                                onSettings: () => context.push('/settings'),
                                 isWide: true,
                               ),
                             ),
@@ -66,7 +65,6 @@ class EntryModeSelectionScreen extends StatelessWidget {
                             _HomeCopy(
                               onJoin: () => context.push('/login'),
                               onPractice: () => context.push('/practice-lobby'),
-                              onSettings: () => context.push('/settings'),
                               isWide: false,
                             ),
                             const Gap(24),
@@ -87,13 +85,11 @@ class _HomeCopy extends StatelessWidget {
   const _HomeCopy({
     required this.onJoin,
     required this.onPractice,
-    required this.onSettings,
     required this.isWide,
   });
 
   final VoidCallback onJoin;
   final VoidCallback onPractice;
-  final VoidCallback onSettings;
   final bool isWide;
 
   @override
@@ -104,27 +100,7 @@ class _HomeCopy extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            const _Badge(label: '2026 암송대회'),
-            const Spacer(),
-            IconButton(
-              onPressed: onSettings,
-              tooltip: '음성 설정',
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: EntryModeSelectionScreen._ink,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(
-                    color: EntryModeSelectionScreen._line,
-                  ),
-                ),
-              ),
-              icon: const Icon(Icons.settings_suggest_rounded),
-            ),
-          ],
-        ),
+        const _Badge(label: '2026 암송대회'),
         const Gap(26),
         Container(
           width: 56,
