@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../features/auth/login_screen.dart';
-import '../features/auth/splash_screen.dart';
 import '../features/admin/admin_panel_screen.dart';
 import '../features/game/contestant_screen.dart';
 import '../features/game/leaderboard_screen.dart';
@@ -25,7 +24,7 @@ GoRouter router(RouterRef ref) {
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/mode-selection',
     redirect: (context, state) {
       final isLoggedIn = authState.valueOrNull?.session != null;
       final matchedLocation = state.matchedLocation;
@@ -51,7 +50,7 @@ GoRouter router(RouterRef ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (context, state) => const SplashScreen(),
+        builder: (context, state) => const EntryModeSelectionScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -108,9 +107,12 @@ GoRouter router(RouterRef ref) {
       GoRoute(
         path: '/grading',
         builder: (context, state) {
-          final submissionId = int.tryParse(state.uri.queryParameters['submissionId'] ?? '') ?? 0;
+          final submissionId =
+              int.tryParse(state.uri.queryParameters['submissionId'] ?? '') ??
+                  0;
           final sessionId = state.uri.queryParameters['sessionId'] ?? 'default';
-          final roundNumber = int.tryParse(state.uri.queryParameters['roundNumber'] ?? '') ?? 1;
+          final roundNumber =
+              int.tryParse(state.uri.queryParameters['roundNumber'] ?? '') ?? 1;
           return GradingDetailsScreen(
             submissionId: submissionId,
             sessionId: sessionId,
@@ -145,14 +147,15 @@ class LobbyRedirectScreen extends ConsumerWidget {
     return profileAsync.when(
       data: (profile) {
         if (profile == null) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
 
         // 사용자의 역할에 따른 이동 처리
         return latestSessionAsync.when(
           data: (session) {
             final targetSessionId = session?.id ?? 'default';
-            
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (profile.role == 'admin') {
                 context.go('/admin?sessionId=$targetSessionId');
@@ -163,13 +166,16 @@ class LobbyRedirectScreen extends ConsumerWidget {
               }
             });
 
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator()));
           },
-          loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+          loading: () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
           error: (e, _) => Scaffold(body: Center(child: Text('세션 조회 오류: $e'))),
         );
       },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('프로필 조회 오류: $e'))),
     );
   }
