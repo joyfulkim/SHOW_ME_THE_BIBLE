@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../core/competition_verses.dart';
 import '../../core/supabase_client.dart';
 import '../../shared/models.dart';
 
@@ -24,7 +25,8 @@ Stream<List<Submission>> allSubmissionsStream(
       .map((row) => Submission.fromJson(row))
       .toList()
     ..sort((a, b) {
-      if (b.accuracyScore != a.accuracyScore) return b.accuracyScore.compareTo(a.accuracyScore);
+      if (b.accuracyScore != a.accuracyScore)
+        return b.accuracyScore.compareTo(a.accuracyScore);
       final t1 = a.submittedAt ?? a.createdAt;
       final t2 = b.submittedAt ?? b.createdAt;
       return t1.compareTo(t2);
@@ -33,8 +35,7 @@ Stream<List<Submission>> allSubmissionsStream(
   // 2) Realtime 변화 감지 및 재조회
   await for (final _ in supabase
       .from('submissions')
-      .stream(primaryKey: ['id'])
-      .eq('session_id', sessionId)) {
+      .stream(primaryKey: ['id']).eq('session_id', sessionId)) {
     final updatedResponse = await supabase
         .from('submissions')
         .select('*, profiles(*)')
@@ -45,7 +46,8 @@ Stream<List<Submission>> allSubmissionsStream(
         .map((row) => Submission.fromJson(row))
         .toList()
       ..sort((a, b) {
-        if (b.accuracyScore != a.accuracyScore) return b.accuracyScore.compareTo(a.accuracyScore);
+        if (b.accuracyScore != a.accuracyScore)
+          return b.accuracyScore.compareTo(a.accuracyScore);
         final t1 = a.submittedAt ?? a.createdAt;
         final t2 = b.submittedAt ?? b.createdAt;
         return t1.compareTo(t2);
@@ -58,6 +60,7 @@ Stream<List<Submission>> allSubmissionsStream(
 // ──────────────────────────────────────────────────────
 @riverpod
 Future<List<Verse>> versesList(VersesListRef ref) async {
+  await ensureCompetitionVersesRegistered();
   final response = await supabase
       .from('verses_pool')
       .select()
@@ -74,15 +77,13 @@ Future<List<Verse>> versesList(VersesListRef ref) async {
 @riverpod
 Future<List<int>> usedVerseIds(UsedVerseIdsRef ref, String sessionId) async {
   if (sessionId == 'default') return [];
-  
+
   final response = await supabase
       .from('session_questions')
       .select('verse_id')
       .eq('session_id', sessionId);
-      
-  return (response as List)
-      .map((e) => e['verse_id'] as int)
-      .toList();
+
+  return (response as List).map((e) => e['verse_id'] as int).toList();
 }
 
 @riverpod

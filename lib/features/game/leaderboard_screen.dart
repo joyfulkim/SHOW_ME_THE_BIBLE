@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:show_me_bible/features/auth/auth_provider.dart';
 
 import 'package:show_me_bible/main.dart';
+import '../../core/admin_config.dart';
 import '../../core/supabase_client.dart';
 import '../../shared/accuracy_calculator.dart';
 import '../../shared/models.dart';
@@ -49,15 +50,16 @@ class _LeaderboardBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final submissionsAsync = session.isSpeedMode 
+    final submissionsAsync = session.isSpeedMode
         ? ref.watch(allSubmissionsStreamProvider(sessionId))
         : ref.watch(submissionsStreamProvider(sessionId, session.currentRound));
     final profileAsync = ref.watch(currentProfileProvider);
     final profile = profileAsync.valueOrNull;
 
-    // 관리자 여부 판단 (role이 admin이거나 테스트 관리자 이메일인 경우)
+    // 관리자 여부 판단 (role이 admin이거나 등록된 관리자 이메일인 경우)
     final currentUserEmail = supabase.auth.currentUser?.email;
-    final isAdmin = profile?.role == 'admin' || currentUserEmail == 'asdayh@naver.com';
+    final isAdmin =
+        profile?.role == 'admin' || isConfiguredAdminEmail(currentUserEmail);
 
     return Column(
       children: [
@@ -66,7 +68,8 @@ class _LeaderboardBody extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
           decoration: BoxDecoration(
             color: AppTheme.kNavyBg,
-            border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.05))),
+            border: Border(
+                bottom: BorderSide(color: Colors.black.withOpacity(0.05))),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -74,8 +77,10 @@ class _LeaderboardBody extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(
-                    session.isSpeedMode ? '🏆 전체 진행 현황' : 'ROUND ${session.currentRound} / ${session.totalRounds}',
+                  Text(
+                    session.isSpeedMode
+                        ? '🏆 전체 진행 현황'
+                        : 'ROUND ${session.currentRound} / ${session.totalRounds}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: AppTheme.kNavy,
                       fontWeight: FontWeight.bold,
@@ -85,7 +90,10 @@ class _LeaderboardBody extends ConsumerWidget {
                   const Gap(4),
                   Text(
                     session.isSpeedMode ? '스피드 레이스 모드' : _statusLabel(session),
-                    style: const TextStyle(color: Colors.black45, fontSize: 13, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                        color: Colors.black45,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -93,18 +101,24 @@ class _LeaderboardBody extends ConsumerWidget {
               submissionsAsync.when(
                 data: (subs) {
                   final uniqueUsers = subs.map((s) => s.userId).toSet().length;
-                  final submittedAll = subs.where((s) => s.roundNumber == session.totalRounds && s.isFinal).length;
+                  final submittedAll = subs
+                      .where((s) =>
+                          s.roundNumber == session.totalRounds && s.isFinal)
+                      .length;
                   return Column(
                     children: [
                       Text(
-                        session.isSpeedMode ? '$submittedAll / $uniqueUsers' : '${subs.where((s) => s.isFinal).length}',
+                        session.isSpeedMode
+                            ? '$submittedAll / $uniqueUsers'
+                            : '${subs.where((s) => s.isFinal).length}',
                         style: theme.textTheme.headlineMedium?.copyWith(
                           color: const Color(0xFF1E7D4F),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(session.isSpeedMode ? '완주 인원' : '제출 완료',
-                          style: const TextStyle(color: Colors.black45, fontSize: 11)),
+                          style: const TextStyle(
+                              color: Colors.black45, fontSize: 11)),
                     ],
                   );
                 },
@@ -133,8 +147,10 @@ class _LeaderboardBody extends ConsumerWidget {
                 itemCount: submissions.length,
                 itemBuilder: (context, index) {
                   final submission = submissions[index];
-                  final questionAsync = ref.read(currentQuestionStreamProvider(sessionId, session.currentRound));
-                  final verseContent = questionAsync.valueOrNull?.verse?.content ?? '';
+                  final questionAsync = ref.read(currentQuestionStreamProvider(
+                      sessionId, session.currentRound));
+                  final verseContent =
+                      questionAsync.valueOrNull?.verse?.content ?? '';
 
                   return _LeaderboardTile(
                     rank: index + 1,
@@ -195,7 +211,7 @@ class _LeaderboardBody extends ConsumerWidget {
           'last_submission': s,
         };
       }
-      
+
       final stats = userStats[s.userId]!;
       if (s.isFinal) {
         if (s.roundNumber > stats['max_round']) {
@@ -207,9 +223,10 @@ class _LeaderboardBody extends ConsumerWidget {
           stats['is_finished'] = true;
         }
       }
-      
+
       // 최신 정보 유지를 위해 덮어쓰기 (프로필 등)
-      if (s.roundNumber >= (stats['last_submission'] as Submission).roundNumber) {
+      if (s.roundNumber >=
+          (stats['last_submission'] as Submission).roundNumber) {
         stats['last_submission'] = s;
       }
     }
@@ -235,7 +252,8 @@ class _LeaderboardBody extends ConsumerWidget {
       itemBuilder: (context, index) {
         final stats = sortedList[index];
         final profile = stats['profile'] as Profile?;
-        final avgAccuracy = (stats['total_accuracy'] as double) / (stats['completed_count'] > 0 ? stats['completed_count'] : 1);
+        final avgAccuracy = (stats['total_accuracy'] as double) /
+            (stats['completed_count'] > 0 ? stats['completed_count'] : 1);
 
         return _SpeedLeaderboardTile(
           rank: index + 1,
@@ -244,15 +262,18 @@ class _LeaderboardBody extends ConsumerWidget {
           totalRounds: session.totalRounds,
           avgAccuracy: avgAccuracy,
           isFinished: stats['is_finished'],
-          onTap: isAdmin ? () {
-             context.push(
-              '/user-result?sessionId=$sessionId&targetUserId=${profile?.id}',
-            );
-          } : null,
+          onTap: isAdmin
+              ? () {
+                  context.push(
+                    '/user-result?sessionId=$sessionId&targetUserId=${profile?.id}',
+                  );
+                }
+              : null,
         );
       },
     );
   }
+
   String _statusLabel(GameSession s) {
     return switch (s.status) {
       'waiting' => '대기 중',
@@ -375,8 +396,8 @@ class _LeaderboardTile extends StatelessWidget {
                 // 점수/진행도 표시
                 if (submission.isFinal)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1E7D4F).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -509,8 +530,9 @@ class _SpeedLeaderboardTile extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: completedRounds / totalRounds,
                           backgroundColor: const Color(0xFFDDE2F0),
-                          valueColor: AlwaysStoppedAnimation(
-                              isFinished ? const Color(0xFF1E7D4F) : AppTheme.kNavy),
+                          valueColor: AlwaysStoppedAnimation(isFinished
+                              ? const Color(0xFF1E7D4F)
+                              : AppTheme.kNavy),
                           minHeight: 6,
                         ),
                       ),
@@ -531,7 +553,8 @@ class _SpeedLeaderboardTile extends StatelessWidget {
                     ),
                     Text(
                       '평균 ${avgAccuracy.toStringAsFixed(1)}%',
-                      style: const TextStyle(color: Colors.black45, fontSize: 10),
+                      style:
+                          const TextStyle(color: Colors.black45, fontSize: 10),
                     ),
                   ],
                 ),

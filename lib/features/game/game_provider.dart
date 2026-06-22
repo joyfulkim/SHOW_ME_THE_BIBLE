@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:show_me_bible/core/competition_verses.dart';
 import 'package:show_me_bible/core/supabase_client.dart';
 import 'package:show_me_bible/shared/models.dart';
 
@@ -18,44 +19,45 @@ final activeSessionIdProvider = StateProvider<String?>((ref) => null);
 @riverpod
 Stream<GameSession?> latestActiveSession(LatestActiveSessionRef ref) {
   // game_sessions 테이블 전체를 구독하여 실시간 변화 감지
-  return supabase
-      .from('game_sessions')
-      .stream(primaryKey: ['id'])
-      .map((list) {
-        // DB에 있는 모든 세션을 불러와서 클라이언트 측에서 정렬 및 필터링
-        if (list.isEmpty) return null;
-        
-        // 1. 생성일자 기준 내림차순 정렬 (가장 최신 것이 첫 번째)
-        final sorted = List<Map<String, dynamic>>.from(list)
-          ..sort((a, b) {
-            final aTime = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime(0);
-            final bTime = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime(0);
-            return bTime.compareTo(aTime);
-          });
-          
-        final latest = sorted.first;
-        final status = latest['status'] as String?;
-        final createdAtStr = latest['created_at']?.toString() ?? '';
-        final createdAt = DateTime.tryParse(createdAtStr) ?? DateTime(0);
-        final age = DateTime.now().difference(createdAt);
+  return supabase.from('game_sessions').stream(primaryKey: ['id']).map((list) {
+    // DB에 있는 모든 세션을 불러와서 클라이언트 측에서 정렬 및 필터링
+    if (list.isEmpty) return null;
 
-        // 2. 가장 최신 세션이라도 '종료'되었거나 12시간 이상 지났다면 '없음'으로 간주
-        // 이렇게 해야 현재 진행 중인 딱 하나의 세션만 참가자에게 노출됩니다.
-        if (status == 'finished' || age.inHours >= 12) {
-          return null;
-        }
-          
-        return GameSession.fromJson(latest);
+    // 1. 생성일자 기준 내림차순 정렬 (가장 최신 것이 첫 번째)
+    final sorted = List<Map<String, dynamic>>.from(list)
+      ..sort((a, b) {
+        final aTime =
+            DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime(0);
+        final bTime =
+            DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime(0);
+        return bTime.compareTo(aTime);
       });
+
+    final latest = sorted.first;
+    final status = latest['status'] as String?;
+    final createdAtStr = latest['created_at']?.toString() ?? '';
+    final createdAt = DateTime.tryParse(createdAtStr) ?? DateTime(0);
+    final age = DateTime.now().difference(createdAt);
+
+    // 2. 가장 최신 세션이라도 '종료'되었거나 12시간 이상 지났다면 '없음'으로 간주
+    // 이렇게 해야 현재 진행 중인 딱 하나의 세션만 참가자에게 노출됩니다.
+    if (status == 'finished' || age.inHours >= 12) {
+      return null;
+    }
+
+    return GameSession.fromJson(latest);
+  });
 }
 
 // ──────────────────────────────────────────────────────
 // 게임 세션 Realtime 스트림
 // ──────────────────────────────────────────────────────
 @riverpod
-Stream<GameSession?> gameSessionStream(GameSessionStreamRef ref, String sessionId) {
+Stream<GameSession?> gameSessionStream(
+    GameSessionStreamRef ref, String sessionId) {
   // UUID 형식이 아니면 (예: "default") 쿼리하지 않고 즉시 null 반환하여 DB 에러 방지
-  final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+  final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
   if (!uuidRegex.hasMatch(sessionId)) {
     return Stream.value(null);
   }
@@ -78,7 +80,8 @@ Future<SessionQuestion?> currentQuestion(
   String sessionId,
   int roundNumber,
 ) async {
-  final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+  final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
   if (!uuidRegex.hasMatch(sessionId)) return null;
 
   final response = await supabase
@@ -112,14 +115,16 @@ Stream<SessionQuestion?> currentQuestionStream(
 
   // 세션의 변화를 watch하여 변화가 생길 때마다 구절 정보를 다시 조회하도록 함
   final _ = ref.watch(gameSessionStreamProvider(sessionId)).valueOrNull;
-  
+
   // 최초 및 세션 변화 시마다 조회
   final question = await _fetchQuestion(sessionId, roundNumber);
   yield question;
 
   // 만약 구절이 아직 없다면(데이터 지연 등), submissions 변화가 있을 때 재시도할 수 있도록 함
   if (question == null) {
-    await for (final _ in supabase.from('session_questions').stream(primaryKey: ['id']).eq('session_id', sessionId)) {
+    await for (final _ in supabase
+        .from('session_questions')
+        .stream(primaryKey: ['id']).eq('session_id', sessionId)) {
       yield await _fetchQuestion(sessionId, roundNumber);
     }
   }
@@ -190,13 +195,11 @@ Stream<int> userCurrentRound(UserCurrentRoundRef ref, String sessionId) async* {
   yield await calculateNextRound();
 
   // B) 본인의 제출 기록 또는 세션 라운드 변화를 Realtime 구독
-  // .stream()에 .eq() 필터가 가끔 누락되는 이슈를 대비하여 세션 아이디로만 필터링 후 
+  // .stream()에 .eq() 필터가 가끔 누락되는 이슈를 대비하여 세션 아이디로만 필터링 후
   // 내부에서 본인 기록인지 확인
   await for (final _ in supabase
       .from('submissions')
-      .stream(primaryKey: ['id'])
-      .eq('session_id', sessionId)) {
-    
+      .stream(primaryKey: ['id']).eq('session_id', sessionId)) {
     // 이 리스트의 어떠한 변화라도 감지되면 라운드를 재계산하여 전송
     yield await calculateNextRound();
   }
@@ -224,12 +227,13 @@ Stream<List<Submission>> submissionsStream(
       .select('*, profiles(*)')
       .eq('session_id', sessionId)
       .eq('round_number', roundNumber);
-  
+
   yield (initialResponse as List)
       .map((row) => Submission.fromJson(row))
       .toList()
     ..sort((a, b) {
-      if (b.accuracyScore != a.accuracyScore) return b.accuracyScore.compareTo(a.accuracyScore);
+      if (b.accuracyScore != a.accuracyScore)
+        return b.accuracyScore.compareTo(a.accuracyScore);
       final t1 = a.submittedAt ?? a.createdAt;
       final t2 = b.submittedAt ?? b.createdAt;
       return t1.compareTo(t2);
@@ -238,9 +242,7 @@ Stream<List<Submission>> submissionsStream(
   // 2) submissions 테이블의 변화를 감지하여 재조회 (Realtime 트리거)
   await for (final _ in supabase
       .from('submissions')
-      .stream(primaryKey: ['id'])
-      .eq('session_id', sessionId)) {
-    
+      .stream(primaryKey: ['id']).eq('session_id', sessionId)) {
     final updatedResponse = await supabase
         .from('submissions')
         .select('*, profiles(*)')
@@ -251,7 +253,8 @@ Stream<List<Submission>> submissionsStream(
         .map((row) => Submission.fromJson(row))
         .toList()
       ..sort((a, b) {
-        if (b.accuracyScore != a.accuracyScore) return b.accuracyScore.compareTo(a.accuracyScore);
+        if (b.accuracyScore != a.accuracyScore)
+          return b.accuracyScore.compareTo(a.accuracyScore);
         final t1 = a.submittedAt ?? a.createdAt;
         final t2 = b.submittedAt ?? b.createdAt;
         return t1.compareTo(t2);
@@ -282,7 +285,8 @@ Future<List<Submission>> userSubmissions(
 // ──────────────────────────────────────────────────────
 // 모든 라운드 제출 현황 (스피드 모드 리더보드용)
 // ──────────────────────────────────────────────────────
-final allSubmissionsStreamProvider = StreamProvider.family<List<Submission>, String>((ref, sessionId) async * {
+final allSubmissionsStreamProvider =
+    StreamProvider.family<List<Submission>, String>((ref, sessionId) async* {
   final uuidRegex = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
   if (!uuidRegex.hasMatch(sessionId)) {
@@ -295,15 +299,13 @@ final allSubmissionsStreamProvider = StreamProvider.family<List<Submission>, Str
       .from('submissions')
       .select('*, profiles(*)')
       .eq('session_id', sessionId);
-  
+
   yield (initial as List).map((row) => Submission.fromJson(row)).toList();
 
   // 리얼타임 구독
   await for (final _ in supabase
       .from('submissions')
-      .stream(primaryKey: ['id'])
-      .eq('session_id', sessionId)) {
-    
+      .stream(primaryKey: ['id']).eq('session_id', sessionId)) {
     final updated = await supabase
         .from('submissions')
         .select('*, profiles(*)')
@@ -318,6 +320,7 @@ final allSubmissionsStreamProvider = StreamProvider.family<List<Submission>, Str
 // ──────────────────────────────────────────────────────
 @riverpod
 Future<List<Verse>> allVerses(AllVersesRef ref) async {
+  await ensureCompetitionVersesRegistered();
   final response = await supabase
       .from('verses_pool')
       .select()
@@ -348,14 +351,19 @@ class AdminController extends _$AdminController {
       if (result != null && result is Map && result['error'] != null) {
         throw result['error'];
       }
-      
+
       // 2. 세션 정보 조회하여 모드 확인 (필요한 경우 로직 추가 가능)
-      await supabase.from('game_sessions').select('game_mode').eq('id', sessionId).single();
+      await supabase
+          .from('game_sessions')
+          .select('game_mode')
+          .eq('id', sessionId)
+          .single();
 
       // 3. 상태 및 시작 시간 명시적 기록 (RPC 버그 방어 및 모드별 상태 설정)
-      final status = (result != null && result is Map && result['p_game_mode'] == 'speed')
-          ? 'round_active'
-          : 'round_locked'; // 실시간 모드는 구절 선택을 위해 round_locked로 시작
+      final status =
+          (result != null && result is Map && result['p_game_mode'] == 'speed')
+              ? 'round_active'
+              : 'round_locked'; // 실시간 모드는 구절 선택을 위해 round_locked로 시작
 
       await supabase.from('game_sessions').update({
         'status': status,
@@ -404,7 +412,8 @@ class AdminController extends _$AdminController {
   }
 
   /// 세션 생성
-  Future<String?> createSession(int totalRounds, String title, bool sttEnabled, String gameMode) async {
+  Future<String?> createSession(
+      int totalRounds, String title, bool sttEnabled, String gameMode) async {
     state = const AsyncLoading();
     try {
       final user = supabase.auth.currentUser;
@@ -456,9 +465,12 @@ class AdminController extends _$AdminController {
     try {
       // CASCADE 설정이 안되어 있을 경우를 대비해 수동으로 삭제 순서 제어
       await supabase.from('submissions').delete().eq('session_id', sessionId);
-      await supabase.from('session_questions').delete().eq('session_id', sessionId);
+      await supabase
+          .from('session_questions')
+          .delete()
+          .eq('session_id', sessionId);
       await supabase.from('game_sessions').delete().eq('id', sessionId);
-      
+
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -466,7 +478,8 @@ class AdminController extends _$AdminController {
   }
 
   /// 구절 추가
-  Future<void> addVerse(String reference, String content, int difficulty, {String? theme}) async {
+  Future<void> addVerse(String reference, String content, int difficulty,
+      {String? theme}) async {
     state = const AsyncLoading();
     try {
       await supabase.from('verses_pool').insert({
@@ -486,13 +499,10 @@ class AdminController extends _$AdminController {
   Future<void> updateSubmissionScore(int submissionId, double newScore) async {
     state = const AsyncLoading();
     try {
-      await supabase
-          .from('submissions')
-          .update({
-            'accuracy_score': newScore,
-            'is_final': true, // 관리자가 채점하면 최종본으로 간주
-          })
-          .eq('id', submissionId);
+      await supabase.from('submissions').update({
+        'accuracy_score': newScore,
+        'is_final': true, // 관리자가 채점하면 최종본으로 간주
+      }).eq('id', submissionId);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -519,8 +529,7 @@ class AdminController extends _$AdminController {
     try {
       await supabase
           .from('game_sessions')
-          .update({'grading_completed': true})
-          .eq('id', sessionId);
+          .update({'grading_completed': true}).eq('id', sessionId);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
