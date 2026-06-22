@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import '../../core/services/stt_service.dart';
 import '../../main.dart';
 import '../../shared/accuracy_calculator.dart';
 import 'practice_verse.dart';
+import '../game/widgets/game_widgets.dart';
 import '../settings/settings_provider.dart';
 
 class PracticeSessionScreen extends ConsumerStatefulWidget {
@@ -12,13 +16,14 @@ class PracticeSessionScreen extends ConsumerStatefulWidget {
   const PracticeSessionScreen({super.key, required this.verse});
 
   @override
-  ConsumerState<PracticeSessionScreen> createState() => _PracticeSessionScreenState();
+  ConsumerState<PracticeSessionScreen> createState() =>
+      _PracticeSessionScreenState();
 }
 
 class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
   final _inputCtrl = TextEditingController();
   final FlutterTts _flutterTts = FlutterTts();
-  
+
   double _accuracy = 0.0;
   bool _isChecked = false;
   bool _showVerseContent = false;
@@ -48,6 +53,7 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
 
   @override
   void dispose() {
+    unawaited(ref.read(sttControllerProvider.notifier).stopListening());
     _flutterTts.stop();
     _inputCtrl.dispose();
     super.dispose();
@@ -68,7 +74,8 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
 
           await _flutterTts.setLanguage(selectedLocale);
           if (selectedVoice != null) {
-            await _flutterTts.setVoice({"name": selectedVoice, "locale": selectedLocale});
+            await _flutterTts
+                .setVoice({"name": selectedVoice, "locale": selectedLocale});
           }
           await _flutterTts.setSpeechRate(speechRate);
         } catch (e) {
@@ -85,13 +92,21 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
   void _checkAccuracy() {
     final original = widget.verse.content;
     final input = _inputCtrl.text;
-    
+
     final score = AccuracyCalculator.calculate(original, input);
-    
+
     setState(() {
       _accuracy = score;
       _isChecked = true;
     });
+  }
+
+  void _setSpeechInput(String text) {
+    _inputCtrl.text = text;
+    _inputCtrl.selection = TextSelection.collapsed(offset: text.length);
+    if (_isChecked) {
+      setState(() => _isChecked = false);
+    }
   }
 
   @override
@@ -137,15 +152,22 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
                             IconButton(
                               onPressed: _speak,
                               icon: Icon(
-                                _isSpeaking ? Icons.stop_circle : Icons.volume_up,
-                                color: _isSpeaking ? Colors.redAccent : AppTheme.kNavy.withOpacity(0.6),
+                                _isSpeaking
+                                    ? Icons.stop_circle
+                                    : Icons.volume_up,
+                                color: _isSpeaking
+                                    ? Colors.redAccent
+                                    : AppTheme.kNavy.withOpacity(0.6),
                               ),
                               tooltip: _isSpeaking ? '중지' : '읽어주기',
                             ),
                             IconButton(
-                              onPressed: () => setState(() => _showVerseContent = !_showVerseContent),
+                              onPressed: () => setState(
+                                  () => _showVerseContent = !_showVerseContent),
                               icon: Icon(
-                                _showVerseContent ? Icons.menu_book : Icons.menu_book_outlined,
+                                _showVerseContent
+                                    ? Icons.menu_book
+                                    : Icons.menu_book_outlined,
                                 color: AppTheme.kNavy.withOpacity(0.6),
                               ),
                               tooltip: _showVerseContent ? '본문 숨기기' : '본문 보기',
@@ -193,6 +215,21 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
               ),
             ),
             const Gap(32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '내 암송',
+                  style: TextStyle(
+                    color: AppTheme.kNavy,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                MicButton(onResult: _setSpeechInput),
+              ],
+            ),
+            const Gap(8),
             TextField(
               controller: _inputCtrl,
               maxLines: 8,
@@ -208,19 +245,26 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
             const Gap(24),
             if (_isChecked) ...[
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                 decoration: BoxDecoration(
-                  color: _accuracy >= 90 ? Colors.green.shade50 : Colors.orange.shade50,
+                  color: _accuracy >= 90
+                      ? Colors.green.shade50
+                      : Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _accuracy >= 90 ? Colors.green.shade200 : Colors.orange.shade200,
+                    color: _accuracy >= 90
+                        ? Colors.green.shade200
+                        : Colors.orange.shade200,
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      _accuracy >= 90 ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                      _accuracy >= 90
+                          ? Icons.check_circle_rounded
+                          : Icons.info_outline_rounded,
                       color: _accuracy >= 90 ? Colors.green : Colors.orange,
                     ),
                     const Gap(12),
@@ -229,7 +273,9 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: _accuracy >= 90 ? Colors.green.shade800 : Colors.orange.shade800,
+                        color: _accuracy >= 90
+                            ? Colors.green.shade800
+                            : Colors.orange.shade800,
                       ),
                     ),
                   ],
@@ -243,9 +289,12 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
               child: ElevatedButton(
                 onPressed: _checkAccuracy,
                 style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('정확도 확인하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text('정확도 확인하기',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

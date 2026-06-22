@@ -98,6 +98,13 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('오류: $e')),
         ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showVerseSelector(context, ref, null),
+          backgroundColor: AppTheme.kNavy,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add),
+          label: const Text('구절 등록'),
+        ),
       ),
     );
   }
@@ -424,10 +431,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     if (confirmed == true) {
       // 1. 초기화 작업 수행
       await ref.read(adminControllerProvider.notifier).resetSession(sessionId);
-      
+
       // 2. 결과 확인
       final adminState = ref.read(adminControllerProvider);
-      
+
       if (adminState.hasError) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -692,9 +699,7 @@ class _SessionStatusCard extends ConsumerWidget {
                   label: session.isFinished ? '완료 라운드' : '현재 라운드',
                   value: '${session.currentRound} / ${session.totalRounds}'),
               const Gap(8),
-              _StatChip(
-                  label: '진행율',
-                  value: _calculateProgress(ref)),
+              _StatChip(label: '진행율', value: _calculateProgress(ref)),
             ],
           ),
         ],
@@ -707,7 +712,8 @@ class _SessionStatusCard extends ConsumerWidget {
     if (session.isWaiting && session.startedAt == null) return '0%';
 
     if (session.isSpeedMode) {
-      final submissions = ref.watch(allSubmissionsStreamProvider(sessionId)).valueOrNull ?? [];
+      final submissions =
+          ref.watch(allSubmissionsStreamProvider(sessionId)).valueOrNull ?? [];
       final uniqueUsers = submissions.map((s) => s.userId).toSet().length;
       if (uniqueUsers == 0) return '0%';
 
