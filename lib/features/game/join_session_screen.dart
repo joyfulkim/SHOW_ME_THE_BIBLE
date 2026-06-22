@@ -49,11 +49,7 @@ class JoinSessionScreen extends ConsumerWidget {
                     loading: () => '로드 중',
                     error: (_, __) => 'R_BIBLE',
                   ),
-                  leading: BibleIconButton(
-                    icon: Icons.arrow_back_rounded,
-                    tooltip: '홈으로',
-                    onTap: () => context.go('/mode-selection'),
-                  ),
+                  leading: const BibleHomeLeading(),
                   actions: [
                     BibleIconButton(
                       icon: Icons.logout_rounded,

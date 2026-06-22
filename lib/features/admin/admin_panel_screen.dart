@@ -75,14 +75,11 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
                 child: BibleTopBar(
                   title: '관리자',
-                  sideWidth: 120,
-                  leading: _isManaging
-                      ? BibleIconButton(
-                          icon: Icons.arrow_back_rounded,
-                          tooltip: '대시보드로 돌아가기',
-                          onTap: () => setState(() => _isManaging = false),
-                        )
-                      : null,
+                  sideWidth: 132,
+                  leading: BibleHomeLeading(
+                    showBack: _isManaging,
+                    onBack: () => setState(() => _isManaging = false),
+                  ),
                   actions: [
                     BibleIconButton(
                       icon: Icons.bookmark_border_rounded,

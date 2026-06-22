@@ -128,10 +128,9 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
               child: BibleTopBar(
                 title: '암송 연습',
                 sideWidth: 116,
-                leading: BibleIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  tooltip: '목록으로',
-                  onTap: () => context.pop(),
+                leading: BibleHomeLeading(
+                  showBack: true,
+                  onBack: () => context.pop(),
                 ),
                 actions: [
                   TextButton.icon(

@@ -128,81 +128,96 @@ class FinalResultScreen extends ConsumerWidget {
 
     return BiblePageFrame(
       child: SafeArea(
-        child: sessionAsync.when(
-          data: (session) {
-            if (session == null) return const SizedBox.shrink();
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 10, 18, 8),
+              child: BibleTopBar(
+                title: '최종 결과',
+                leading: BibleHomeLeading(),
+              ),
+            ),
+            Expanded(
+              child: sessionAsync.when(
+                data: (session) {
+                  if (session == null) return const SizedBox.shrink();
 
-            final profileAsync = ref.watch(currentProfileProvider);
-            final profile = profileAsync.valueOrNull;
-            final isAdmin = profile?.role == 'admin';
+                  final profileAsync = ref.watch(currentProfileProvider);
+                  final profile = profileAsync.valueOrNull;
+                  final isAdmin = profile?.role == 'admin';
 
-            // 아직 채점이 진행 중이라면 (관리자 제외)
-            if (!session.gradingCompleted && !isAdmin) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: BibleCreamCard(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.fact_check_outlined,
-                          size: 62,
-                          color: BibleColors.goldDark,
-                        ),
-                        const Gap(24),
-                        const Text(
-                          '최종 채점이 진행 중입니다.',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: BibleColors.ink,
+                  // 아직 채점이 진행 중이라면 (관리자 제외)
+                  if (!session.gradingCompleted && !isAdmin) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: BibleCreamCard(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.fact_check_outlined,
+                                size: 62,
+                                color: BibleColors.goldDark,
+                              ),
+                              const Gap(24),
+                              const Text(
+                                '최종 채점이 진행 중입니다.',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: BibleColors.ink,
+                                ),
+                              ),
+                              const Gap(8),
+                              const Text(
+                                '관리자가 모든 채점을 완료할 때까지\n잠시만 기다려주세요...',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.black45),
+                              ),
+                              const Gap(32),
+                              ElevatedButton.icon(
+                                onPressed: () => context.go('/mode-selection'),
+                                icon: const Icon(Icons.home),
+                                label: const Text('홈으로'),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 52),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const Gap(8),
-                        const Text(
-                          '관리자가 모든 채점을 완료할 때까지\n잠시만 기다려주세요...',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black45),
-                        ),
-                        const Gap(32),
-                        ElevatedButton.icon(
-                          onPressed: () => context.go('/mode-selection'),
-                          icon: const Icon(Icons.home),
-                          label: const Text('홈으로'),
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 52),
-                          ),
-                        ),
-                      ],
+                      ),
+                    );
+                  }
+
+                  return rankingsAsync.when(
+                    data: (rankings) => _buildResult(context, theme, rankings),
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(
+                        color: BibleColors.gold,
+                      ),
                     ),
+                    error: (e, _) => Center(
+                      child: Text(
+                        '오류: $e',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: BibleColors.gold),
+                ),
+                error: (e, _) => Center(
+                  child: Text(
+                    '세션 로딩 오류: $e',
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
-              );
-            }
-
-            return rankingsAsync.when(
-              data: (rankings) => _buildResult(context, theme, rankings),
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: BibleColors.gold),
               ),
-              error: (e, _) => Center(
-                child: Text(
-                  '오류: $e',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: BibleColors.gold),
-          ),
-          error: (e, _) => Center(
-            child: Text(
-              '세션 로딩 오류: $e',
-              style: const TextStyle(color: Colors.white),
             ),
-          ),
+          ],
         ),
       ),
     );

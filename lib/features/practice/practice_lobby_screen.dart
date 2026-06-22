@@ -41,11 +41,7 @@ class PracticeLobbyScreen extends StatelessWidget {
                 child: BibleTopBar(
                   title: '혼자 연습하기',
                   sideWidth: 118,
-                  leading: BibleIconButton(
-                    icon: Icons.arrow_back_rounded,
-                    tooltip: '뒤로가기',
-                    onTap: () => context.go('/mode-selection'),
-                  ),
+                  leading: const BibleHomeLeading(),
                   actions: [
                     InkWell(
                       onTap: () => context.push('/settings'),

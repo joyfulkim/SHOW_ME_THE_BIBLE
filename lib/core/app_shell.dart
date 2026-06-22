@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 class BibleColors {
   const BibleColors._();
@@ -240,6 +241,64 @@ class BibleIconButton extends StatelessWidget {
 
     if (tooltip == null) return button;
     return Tooltip(message: tooltip!, child: button);
+  }
+}
+
+class BibleHomeButton extends StatelessWidget {
+  const BibleHomeButton({
+    super.key,
+    this.onTap,
+    this.color = Colors.white,
+  });
+
+  final VoidCallback? onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return BibleIconButton(
+      icon: Icons.home_rounded,
+      tooltip: '홈으로',
+      color: color,
+      onTap: onTap ?? () => context.go('/mode-selection'),
+    );
+  }
+}
+
+class BibleHomeLeading extends StatelessWidget {
+  const BibleHomeLeading({
+    super.key,
+    this.showBack = false,
+    this.onBack,
+    this.onHome,
+  });
+
+  final bool showBack;
+  final VoidCallback? onBack;
+  final VoidCallback? onHome;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BibleHomeButton(onTap: onHome),
+        if (showBack)
+          BibleIconButton(
+            icon: Icons.arrow_back_rounded,
+            tooltip: '뒤로',
+            color: BibleColors.gold,
+            onTap: onBack ??
+                () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/mode-selection');
+                  }
+                },
+          ),
+      ],
+    );
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/app_shell.dart';
 import 'practice_provider.dart';
 import 'practice_verse.dart';
@@ -72,10 +73,11 @@ class _VerseRegistrationScreenState
               padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
               child: BibleTopBar(
                 title: isEdit ? '구절 수정' : '구절 등록',
-                leading: BibleIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  tooltip: '뒤로',
-                  onTap: () => Navigator.pop(context),
+                sideWidth: 104,
+                leading: BibleHomeLeading(
+                  showBack: true,
+                  onBack: () => Navigator.pop(context),
+                  onHome: () => context.go('/mode-selection'),
                 ),
               ),
             ),

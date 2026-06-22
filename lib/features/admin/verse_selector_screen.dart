@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import 'admin_provider.dart';
 import '../../core/app_shell.dart';
@@ -63,6 +64,16 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.home_rounded, color: Colors.white),
+          tooltip: '홈으로',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+            context.go('/mode-selection');
+          },
+        ),
         title: Text(widget.requiredCount != null
             ? '구절 선택 (${_selectedVerses.length}/${widget.requiredCount})'
             : '구절 선택'),

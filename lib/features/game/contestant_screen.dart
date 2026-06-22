@@ -86,11 +86,11 @@ class ContestantScreen extends ConsumerWidget {
                     error: (_, __) => 'R_BIBLE',
                   ),
                   sideWidth: 116,
-                  leading: BibleIconButton(
-                    icon: Icons.home_outlined,
-                    tooltip: '홈으로',
-                    onTap: () => _confirmLeave(
-                        context, () => context.go('/mode-selection')),
+                  leading: BibleHomeLeading(
+                    onHome: () => _confirmLeave(
+                      context,
+                      () => context.go('/mode-selection'),
+                    ),
                   ),
                   actions: [
                     BibleIconButton(

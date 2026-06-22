@@ -39,10 +39,10 @@ class GradingDetailsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
               child: BibleTopBar(
                 title: '상세 채점',
-                leading: BibleIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  tooltip: '뒤로',
-                  onTap: () => context.pop(),
+                sideWidth: 104,
+                leading: BibleHomeLeading(
+                  showBack: true,
+                  onBack: () => context.pop(),
                 ),
               ),
             ),
