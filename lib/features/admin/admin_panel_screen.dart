@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_shell.dart';
 import '../../main.dart';
 import '../../shared/models.dart';
 import '../game/game_provider.dart';
@@ -51,59 +52,83 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
           await SystemNavigator.pop();
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: const Text('관리자'),
-          leading: _isManaging
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back, color: AppTheme.kNavy),
-                  onPressed: () {
-                    // 앱바의 뒤로가기 버튼도 동일한 로직 수행
-                    setState(() => _isManaging = false);
-                  },
-                )
-              : null,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.book_outlined, color: AppTheme.kNavy),
-              tooltip: '말씀 등록/관리',
-              onPressed: () => _showVerseSelector(context, ref, null),
-            ),
-            IconButton(
-              icon:
-                  const Icon(Icons.leaderboard_outlined, color: AppTheme.kNavy),
-              tooltip: '실시간 리더보드',
-              onPressed: () =>
-                  context.push('/leaderboard?sessionId=${widget.sessionId}'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout, color: AppTheme.kNavy),
-              tooltip: '로그아웃',
-              onPressed: () => _performLogout(context, ref),
-            ),
-          ],
-        ),
-        body: sessionAsync.when(
-          data: (session) {
-            if (session == null) {
-              return _buildCreateSession(context, ref, adminCtrl);
-            }
-            if (!_isManaging) {
-              return _buildDashboard(context, theme, ref, session, adminCtrl);
-            }
-            return _buildSessionControl(
-                context, theme, ref, session, adminCtrl);
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('오류: $e')),
+      child: BiblePageFrame(
+        bottomNavigationBar: BibleBottomNav(
+          active: 'settings',
+          onHome: () => context.go('/mode-selection'),
+          onPractice: () => context.push('/practice-lobby'),
+          onRanking: () =>
+              context.push('/leaderboard?sessionId=${widget.sessionId}'),
+          onSettings: () => setState(() => _isManaging = false),
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showVerseSelector(context, ref, null),
-          backgroundColor: AppTheme.kNavy,
+          backgroundColor: BibleColors.panelLight,
           foregroundColor: Colors.white,
-          icon: const Icon(Icons.add),
+          icon: const Icon(Icons.add, color: BibleColors.gold),
           label: const Text('구절 등록'),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+                child: BibleTopBar(
+                  title: '관리자',
+                  sideWidth: 120,
+                  leading: _isManaging
+                      ? BibleIconButton(
+                          icon: Icons.arrow_back_rounded,
+                          tooltip: '대시보드로 돌아가기',
+                          onTap: () => setState(() => _isManaging = false),
+                        )
+                      : null,
+                  actions: [
+                    BibleIconButton(
+                      icon: Icons.bookmark_border_rounded,
+                      tooltip: '말씀 등록/관리',
+                      onTap: () => _showVerseSelector(context, ref, null),
+                    ),
+                    BibleIconButton(
+                      icon: Icons.leaderboard_outlined,
+                      tooltip: '실시간 리더보드',
+                      onTap: () => context
+                          .push('/leaderboard?sessionId=${widget.sessionId}'),
+                    ),
+                    BibleIconButton(
+                      icon: Icons.logout_rounded,
+                      tooltip: '로그아웃',
+                      onTap: () => _performLogout(context, ref),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: sessionAsync.when(
+                  data: (session) {
+                    if (session == null) {
+                      return _buildCreateSession(context, ref, adminCtrl);
+                    }
+                    if (!_isManaging) {
+                      return _buildDashboard(
+                          context, theme, ref, session, adminCtrl);
+                    }
+                    return _buildSessionControl(
+                        context, theme, ref, session, adminCtrl);
+                  },
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: BibleColors.gold),
+                  ),
+                  error: (e, _) => Center(
+                    child: Text(
+                      '오류: $e',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -117,62 +142,72 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     GameSession session,
     AsyncValue<void> ctrl,
   ) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const Icon(Icons.dashboard_customize_outlined,
-                size: 64, color: AppTheme.kNavy),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 116),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.dashboard_customize_outlined,
+            size: 64,
+            color: BibleColors.gold,
+          ),
+          const Gap(14),
+          const Text(
+            '관리 대시보드',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
+          ),
+          const Gap(22),
+          _SessionSummaryCard(
+            session: session,
+            onManage: () => setState(() => _isManaging = true),
+          ),
+          const Gap(16),
+          _AdminSubmissionBoard(session: session, sessionId: session.id),
+          if (session.isSpeedMode) ...[
             const Gap(16),
-            const Text(
-              '관리 대시보드',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.kNavy),
+            const _ParticipantProgressSummary(),
+          ],
+          const Gap(18),
+          Text(
+            '⚠️ 프로젝트 초기화',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
             ),
-            const Gap(20),
-            _SessionSummaryCard(
-              session: session,
-              onManage: () => setState(() => _isManaging = true),
-            ),
-            const Gap(20),
-            _AdminSubmissionBoard(session: session, sessionId: session.id),
-            if (session.isSpeedMode) ...[
-              const Gap(20),
-              const _ParticipantProgressSummary(),
-            ],
-            const Gap(12),
-            const Text('⚠️ 프로젝트 초기화',
-                style: TextStyle(
-                    color: Colors.black26,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold)),
-            const Gap(12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: ctrl.isLoading
-                    ? null
-                    : () => _showResetConfirm(context, ref, session.id),
-                icon: ctrl.isLoading
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.redAccent))
-                    : const Icon(Icons.refresh, size: 18),
-                label: const Text('모든 데이터 삭제 후 초기화'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.redAccent,
-                  side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+          const Gap(10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: ctrl.isLoading
+                  ? null
+                  : () => _showResetConfirm(context, ref, session.id),
+              icon: ctrl.isLoading
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: BibleColors.danger,
+                      ),
+                    )
+                  : const Icon(Icons.delete_outline_rounded, size: 20),
+              label: const Text('모든 데이터 삭제 후 초기화'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: BibleColors.danger,
+                side: BorderSide(
+                  color: BibleColors.danger.withValues(alpha: 0.8),
                 ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -183,57 +218,71 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     WidgetRef ref,
     AsyncValue<void> ctrl,
   ) {
-    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppTheme.kNavyBg,
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: AppTheme.kNavy.withOpacity(0.2), width: 2),
-              ),
-              child: const Icon(Icons.menu_book_rounded,
-                  size: 40, color: AppTheme.kNavy),
-            ),
-            const Gap(20),
-            Text(
-              'SHOW ME THE BIBLE',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: AppTheme.kNavy,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const Gap(6),
-            const Text('현재 활성화된 프로젝트가 없습니다.',
-                style: TextStyle(color: Colors.black45)),
-            const Gap(32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: ctrl.isLoading
-                    ? null
-                    : () => _showCreateDialog(context, ref),
-                icon: const Icon(Icons.add_circle_outline),
-                label: ctrl.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('새 프로젝트 생성'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
+        padding: const EdgeInsets.all(24),
+        child: BibleCreamCard(
+          padding: const EdgeInsets.all(26),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 82,
+                height: 82,
+                decoration: BoxDecoration(
+                  color: BibleColors.navy.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: BibleColors.gold.withValues(alpha: 0.55),
+                    width: 2,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 42,
+                  color: BibleColors.ink,
                 ),
               ),
-            ),
-          ],
+              const Gap(20),
+              const Text(
+                'SHOW ME THE BIBLE',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: BibleColors.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.3,
+                ),
+              ),
+              const Gap(8),
+              const Text(
+                '현재 활성화된 프로젝트가 없습니다.',
+                style: TextStyle(color: Colors.black45),
+              ),
+              const Gap(28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: ctrl.isLoading
+                      ? null
+                      : () => _showCreateDialog(context, ref),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  label: ctrl.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('새 프로젝트 생성'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BibleColors.navy,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -249,7 +298,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   ) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(24, 4, 24, 116),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -257,7 +306,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
               onPressed: () => setState(() => _isManaging = false),
               icon: const Icon(Icons.arrow_back, size: 16),
               label: const Text('대시보드로 돌아가기'),
-              style: TextButton.styleFrom(foregroundColor: AppTheme.kNavy),
+              style: TextButton.styleFrom(foregroundColor: BibleColors.gold),
             ),
             const Gap(8),
             _SessionStatusCard(session: session, sessionId: widget.sessionId),
@@ -1108,21 +1157,23 @@ class _ParticipantProgressSummary extends ConsumerWidget {
             return Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFCDD0E3)),
+                color: BibleColors.panel.withValues(alpha: 0.74),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: BibleColors.panelLine.withValues(alpha: 0.78),
+                ),
               ),
               child: Column(
                 children: [
                   const Row(
                     children: [
                       Icon(Icons.people_alt_outlined,
-                          size: 18, color: AppTheme.kNavy),
+                          size: 18, color: BibleColors.gold),
                       Gap(8),
                       Text('참가자 실시간 현황',
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.kNavy)),
+                              color: Colors.white)),
                     ],
                   ),
                   const Gap(16),
@@ -1171,14 +1222,16 @@ class _AdminSubmissionBoard extends ConsumerWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFCDD0E3)),
+            color: BibleColors.panel.withValues(alpha: 0.74),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: BibleColors.panelLine.withValues(alpha: 0.78),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
@@ -1187,14 +1240,17 @@ class _AdminSubmissionBoard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.fact_check_outlined,
-                      size: 20, color: AppTheme.kNavy),
+                  const Icon(
+                    Icons.fact_check_outlined,
+                    size: 20,
+                    color: BibleColors.gold,
+                  ),
                   const Gap(8),
                   const Expanded(
                     child: Text(
                       '참가자 암송 현황',
                       style: TextStyle(
-                        color: AppTheme.kNavy,
+                        color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1205,6 +1261,9 @@ class _AdminSubmissionBoard extends ConsumerWidget {
                         context.push('/leaderboard?sessionId=$sessionId'),
                     icon: const Icon(Icons.leaderboard_outlined, size: 18),
                     label: const Text('전체보기'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: BibleColors.gold,
+                    ),
                   ),
                 ],
               ),
@@ -1215,13 +1274,13 @@ class _AdminSubmissionBoard extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                   decoration: BoxDecoration(
-                    color: AppTheme.kSurface,
+                    color: BibleColors.panelLight.withValues(alpha: 0.64),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
                     '아직 참가자의 암송 입력이 없습니다.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black45),
+                    style: TextStyle(color: Colors.white70),
                   ),
                 )
               else ...[
@@ -1272,11 +1331,15 @@ class _AdminSubmissionBoard extends ConsumerWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFCDD0E3)),
+          color: BibleColors.panel.withValues(alpha: 0.74),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: BibleColors.panelLine.withValues(alpha: 0.78),
+          ),
         ),
-        child: const Center(child: CircularProgressIndicator()),
+        child: const Center(
+          child: CircularProgressIndicator(color: BibleColors.gold),
+        ),
       ),
       error: (error, _) => Container(
         width: double.infinity,
@@ -1556,10 +1619,13 @@ class _StatItem extends StatelessWidget {
             style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: valueColor ?? AppTheme.kNavy)),
+                color: valueColor ?? BibleColors.gold)),
         const Gap(4),
         Text(label,
-            style: const TextStyle(fontSize: 12, color: Colors.black45)),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.66),
+            )),
       ],
     );
   }

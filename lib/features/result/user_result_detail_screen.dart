@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_shell.dart';
 import '../../features/auth/auth_provider.dart';
 import '../../features/game/game_provider.dart';
 import '../../main.dart';
@@ -20,56 +21,96 @@ class UserResultDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final submissionsAsync = ref.watch(userSubmissionsProvider(sessionId, targetUserId));
+    final submissionsAsync =
+        ref.watch(userSubmissionsProvider(sessionId, targetUserId));
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('상세 결과'),
-      ),
-      body: submissionsAsync.when(
-        data: (submissions) {
-          if (submissions.isEmpty) {
-            return const Center(child: Text('제출 내역이 없습니다.'));
-          }
-
-          final profileAsync = ref.watch(currentProfileProvider);
-          final profile = profileAsync.valueOrNull;
-          final isAdmin = profile?.role == 'admin';
-          
-          final totalScore = submissions.fold<double>(
-              0, (prev, s) => prev + s.accuracyScore);
-
-          return Column(
-            children: [
-              _buildUserSummary(theme, profile, totalScore, submissions.length),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: submissions.length,
-                  separatorBuilder: (_, __) => const Gap(16),
-                  itemBuilder: (context, index) {
-                    return _RoundResultCard(
-                      submission: submissions[index],
-                      isAdmin: isAdmin,
-                    );
-                  },
+    return BiblePageFrame(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
+              child: BibleTopBar(
+                title: '상세 결과',
+                leading: BibleIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  tooltip: '뒤로',
+                  onTap: () => context.pop(),
                 ),
               ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('오류 발생: $e')),
+            ),
+            Expanded(
+              child: submissionsAsync.when(
+                data: (submissions) {
+                  if (submissions.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        '제출 내역이 없습니다.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  final profileAsync = ref.watch(currentProfileProvider);
+                  final profile = profileAsync.valueOrNull;
+                  final isAdmin = profile?.role == 'admin';
+
+                  final totalScore = submissions.fold<double>(
+                      0, (prev, s) => prev + s.accuracyScore);
+
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                        child: _buildUserSummary(
+                          theme,
+                          profile,
+                          totalScore,
+                          submissions.length,
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                          itemCount: submissions.length,
+                          separatorBuilder: (_, __) => const Gap(16),
+                          itemBuilder: (context, index) {
+                            return _RoundResultCard(
+                              submission: submissions[index],
+                              isAdmin: isAdmin,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: BibleColors.gold),
+                ),
+                error: (e, _) => Center(
+                  child: Text(
+                    '오류 발생: $e',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildUserSummary(ThemeData theme, Profile? profile, double total, int count) {
+  Widget _buildUserSummary(
+      ThemeData theme, Profile? profile, double total, int count) {
     return Container(
       padding: const EdgeInsets.all(24),
-      color: AppTheme.kNavyBg,
+      decoration: BoxDecoration(
+        color: BibleColors.cream,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: BibleColors.gold.withValues(alpha: 0.35)),
+      ),
       child: Row(
         children: [
           CircleAvatar(
@@ -77,7 +118,10 @@ class UserResultDetailScreen extends ConsumerWidget {
             backgroundColor: AppTheme.kNavy,
             child: Text(
               (profile?.nickname ?? '?').characters.firstOrNull ?? '?',
-              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold),
             ),
           ),
           const Gap(20),
@@ -87,7 +131,8 @@ class UserResultDetailScreen extends ConsumerWidget {
               children: [
                 Text(
                   profile?.nickname ?? '알 수 없음',
-                  style: theme.textTheme.titleLarge?.copyWith(color: AppTheme.kNavy, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                      color: AppTheme.kNavy, fontWeight: FontWeight.bold),
                 ),
                 const Gap(4),
                 Text(
@@ -100,7 +145,8 @@ class UserResultDetailScreen extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text('최종 합계', style: TextStyle(color: Colors.black38, fontSize: 11)),
+              const Text('최종 합계',
+                  style: TextStyle(color: Colors.black38, fontSize: 11)),
               Text(
                 '${total.toStringAsFixed(1)}점',
                 style: const TextStyle(
@@ -125,9 +171,12 @@ class _RoundResultCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: isAdmin ? () {
-        context.push('/grading?submissionId=${submission.id}&sessionId=${submission.sessionId}&roundNumber=${submission.roundNumber}');
-      } : null,
+      onTap: isAdmin
+          ? () {
+              context.push(
+                  '/grading?submissionId=${submission.id}&sessionId=${submission.sessionId}&roundNumber=${submission.roundNumber}');
+            }
+          : null,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -143,14 +192,18 @@ class _RoundResultCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppTheme.kNavy,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'ROUND ${submission.roundNumber}',
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
                 Text(
@@ -164,9 +217,12 @@ class _RoundResultCard extends ConsumerWidget {
               ],
             ),
             const Gap(16),
-            _VerseContent(sessionId: submission.sessionId, roundNumber: submission.roundNumber),
+            _VerseContent(
+                sessionId: submission.sessionId,
+                roundNumber: submission.roundNumber),
             const Gap(12),
-            const Text('내 입력 내역:', style: TextStyle(color: Colors.black38, fontSize: 12)),
+            const Text('내 입력 내역:',
+                style: TextStyle(color: Colors.black38, fontSize: 12)),
             const Gap(6),
             Container(
               width: double.infinity,
@@ -195,7 +251,8 @@ class _VerseContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final questionAsync = ref.watch(currentQuestionProvider(sessionId, roundNumber));
+    final questionAsync =
+        ref.watch(currentQuestionProvider(sessionId, roundNumber));
 
     return questionAsync.when(
       data: (question) => Column(
@@ -203,7 +260,10 @@ class _VerseContent extends ConsumerWidget {
         children: [
           Text(
             question?.verse?.reference ?? '구절 정보 없음',
-            style: const TextStyle(color: AppTheme.kNavy, fontWeight: FontWeight.bold, fontSize: 14),
+            style: const TextStyle(
+                color: AppTheme.kNavy,
+                fontWeight: FontWeight.bold,
+                fontSize: 14),
           ),
           const Gap(4),
           Text(

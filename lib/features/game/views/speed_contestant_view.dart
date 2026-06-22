@@ -23,7 +23,8 @@ class SpeedContestantView extends ConsumerStatefulWidget {
   final Profile? profile;
 
   @override
-  ConsumerState<SpeedContestantView> createState() => _SpeedContestantViewState();
+  ConsumerState<SpeedContestantView> createState() =>
+      _SpeedContestantViewState();
 }
 
 class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
@@ -37,7 +38,8 @@ class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
   @override
   void initState() {
     super.initState();
-    _autoSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) => _autoSave());
+    _autoSaveTimer =
+        Timer.periodic(const Duration(seconds: 10), (_) => _autoSave());
   }
 
   @override
@@ -53,17 +55,22 @@ class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
     if (!widget.session.canInput) return;
 
     // 현재 사용자가 진행 중인 실제 라운드 번호 가져오기
-    final currentRound = ref.read(userCurrentRoundProvider(widget.sessionId)).valueOrNull ?? 1;
+    final currentRound =
+        ref.read(userCurrentRoundProvider(widget.sessionId)).valueOrNull ?? 1;
 
     // 최종 제출 여부 확인
-    final mySub = ref.read(mySubmissionProvider(widget.sessionId, currentRound)).valueOrNull;
+    final mySub = ref
+        .read(mySubmissionProvider(widget.sessionId, currentRound))
+        .valueOrNull;
     if (mySub?.isFinal == true) return;
 
     final text = _textController.text;
     if (text.isEmpty) return;
 
-    final question = ref.read(currentQuestionStreamProvider(widget.sessionId, currentRound)).valueOrNull;
-    
+    final question = ref
+        .read(currentQuestionStreamProvider(widget.sessionId, currentRound))
+        .valueOrNull;
+
     ref.read(submissionControllerProvider.notifier).autoSave(
           sessionId: widget.sessionId,
           roundNumber: currentRound,
@@ -100,10 +107,12 @@ class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    final question = await ref.read(currentQuestionProvider(widget.sessionId, round).future);
+    final question =
+        await ref.read(currentQuestionProvider(widget.sessionId, round).future);
     if (question?.verse == null) return;
 
-    final accuracy = AccuracyCalculator.calculate(question!.verse!.content, text);
+    final accuracy =
+        AccuracyCalculator.calculate(question!.verse!.content, text);
 
     await ref.read(submissionControllerProvider.notifier).submitFinal(
           sessionId: widget.sessionId,
@@ -115,7 +124,8 @@ class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
 
   @override
   Widget build(BuildContext context) {
-    final userRoundAsync = ref.watch(userCurrentRoundProvider(widget.sessionId));
+    final userRoundAsync =
+        ref.watch(userCurrentRoundProvider(widget.sessionId));
 
     return userRoundAsync.when(
       data: (round) {
@@ -135,7 +145,9 @@ class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
           currentQuestionStreamProvider(widget.sessionId, round),
           (prev, next) {
             final question = next.valueOrNull;
-            if (question?.verse != null && _secondsRemaining == 0 && _countDownTimer == null) {
+            if (question?.verse != null &&
+                _secondsRemaining == 0 &&
+                _countDownTimer == null) {
               setState(() {
                 _secondsRemaining = (question!.verse!.difficulty * 60);
               });
@@ -156,19 +168,25 @@ class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
             onRefresh: () async {
               ref.invalidate(gameSessionStreamProvider(widget.sessionId));
               ref.invalidate(userCurrentRoundProvider(widget.sessionId));
-              ref.invalidate(currentQuestionStreamProvider(widget.sessionId, round));
+              ref.invalidate(
+                  currentQuestionStreamProvider(widget.sessionId, round));
               await Future.delayed(const Duration(milliseconds: 500));
             },
             child: Column(
               children: [
-                StatusBanner(session: widget.session, secondsRemaining: _secondsRemaining),
+                StatusBanner(
+                    session: widget.session,
+                    secondsRemaining: _secondsRemaining),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 24),
                     child: Column(
                       children: [
-                        RoundIndicator(current: round.clamp(1, widget.session.totalRounds), total: widget.session.totalRounds),
+                        RoundIndicator(
+                            current: round.clamp(1, widget.session.totalRounds),
+                            total: widget.session.totalRounds),
                         const Gap(24),
                         CurrentVerse(
                           sessionId: widget.sessionId,
@@ -184,7 +202,7 @@ class _SpeedContestantViewState extends ConsumerState<SpeedContestantView> {
                           currentRound: round,
                           onSubmit: (s) => _handleSubmit(s, round),
                         ),
-                        const Gap(40),
+                        const Gap(124),
                       ],
                     ),
                   ),

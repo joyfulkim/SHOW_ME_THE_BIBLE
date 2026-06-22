@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/app_shell.dart';
 import '../../core/services/stt_service.dart';
-import '../../main.dart';
 import '../../shared/accuracy_calculator.dart';
 import 'practice_verse.dart';
 import '../game/widgets/game_widgets.dart';
@@ -111,190 +112,256 @@ class _PracticeSessionScreenState extends ConsumerState<PracticeSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('암송 연습'),
-        centerTitle: true,
+    return BiblePageFrame(
+      bottomNavigationBar: BibleBottomNav(
+        active: 'practice',
+        onHome: () => context.go('/mode-selection'),
+        onPractice: () => context.go('/practice-lobby'),
+        onRanking: () => context.push('/login'),
+        onSettings: () => context.push('/settings'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
+      child: SafeArea(
         child: Column(
           children: [
-            Card(
-              color: AppTheme.kNavyBg,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: AppTheme.kNavy.withOpacity(0.1)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
+              child: BibleTopBar(
+                title: '암송 연습',
+                sideWidth: 116,
+                leading: BibleIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  tooltip: '목록으로',
+                  onTap: () => context.pop(),
+                ),
+                actions: [
+                  TextButton.icon(
+                    onPressed: () => context.push('/settings'),
+                    icon: const Icon(
+                      Icons.mic_none_rounded,
+                      color: BibleColors.gold,
+                      size: 20,
+                    ),
+                    label: const Text(
+                      '음성설정',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 10, 24, 116),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Gap(48), // Left spacing for symmetry
-                        Expanded(
-                          child: Text(
-                            widget.verse.reference,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.kNavy,
-                            ),
+                    BibleCreamCard(
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Gap(48),
+                              Expanded(
+                                child: Text(
+                                  widget.verse.reference,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: BibleColors.ink,
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: _speak,
+                                    icon: Icon(
+                                      _isSpeaking
+                                          ? Icons.stop_circle_rounded
+                                          : Icons.volume_up_rounded,
+                                      color: _isSpeaking
+                                          ? BibleColors.danger
+                                          : BibleColors.ink,
+                                    ),
+                                    tooltip: _isSpeaking ? '중지' : '읽어주기',
+                                  ),
+                                  IconButton(
+                                    onPressed: () => setState(() =>
+                                        _showVerseContent = !_showVerseContent),
+                                    icon: Icon(
+                                      _showVerseContent
+                                          ? Icons.menu_book_rounded
+                                          : Icons.menu_book_outlined,
+                                      color: BibleColors.ink,
+                                    ),
+                                    tooltip:
+                                        _showVerseContent ? '본문 숨기기' : '본문 보기',
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: _speak,
-                              icon: Icon(
-                                _isSpeaking
-                                    ? Icons.stop_circle
-                                    : Icons.volume_up,
-                                color: _isSpeaking
-                                    ? Colors.redAccent
-                                    : AppTheme.kNavy.withOpacity(0.6),
+                          const Gap(8),
+                          Divider(
+                            color: BibleColors.gold.withValues(alpha: 0.7),
+                          ),
+                          const Gap(12),
+                          if (_showVerseContent) ...[
+                            Text(
+                              widget.verse.content,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: BibleColors.ink,
+                                height: 1.65,
+                                fontWeight: FontWeight.w600,
                               ),
-                              tooltip: _isSpeaking ? '중지' : '읽어주기',
                             ),
-                            IconButton(
-                              onPressed: () => setState(
-                                  () => _showVerseContent = !_showVerseContent),
-                              icon: Icon(
-                                _showVerseContent
-                                    ? Icons.menu_book
-                                    : Icons.menu_book_outlined,
-                                color: AppTheme.kNavy.withOpacity(0.6),
+                            const Gap(12),
+                          ] else ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 18,
+                                horizontal: 14,
                               ),
-                              tooltip: _showVerseContent ? '본문 숨기기' : '본문 보기',
+                              decoration: BoxDecoration(
+                                color: BibleColors.navy.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Text(
+                                '말씀을 떠올리며 암송해 보세요.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.black45,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const Gap(12),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const Gap(24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.edit_note_rounded,
+                              color: BibleColors.gold,
+                              size: 22,
+                            ),
+                            Gap(8),
+                            Text(
+                              '내 암송',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ],
                         ),
+                        MicButton(onResult: _setSpeechInput),
                       ],
                     ),
-                    const Gap(8),
-                    const Divider(color: AppTheme.kGold),
-                    const Gap(12),
-                    if (_showVerseContent) ...[
-                      Text(
-                        widget.verse.content,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: AppTheme.kNavy,
-                          height: 1.6,
+                    const Gap(10),
+                    TextField(
+                      controller: _inputCtrl,
+                      maxLines: 8,
+                      style: const TextStyle(
+                        color: BibleColors.ink,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '암송한 말씀을 입력하세요',
+                        fillColor: BibleColors.cream,
+                        filled: true,
+                        contentPadding: const EdgeInsets.all(20),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: BorderSide(
+                            color: BibleColors.gold.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: BibleColors.gold,
+                            width: 2,
+                          ),
                         ),
                       ),
-                      const Gap(16),
-                    ] else ...[
-                      const Text(
-                        '성경 구절이 숨겨져 있습니다.\n오른쪽 상단 책 아이콘을 눌러 확인하세요.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.black38,
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
+                      onChanged: (_) {
+                        if (_isChecked) setState(() => _isChecked = false);
+                      },
+                    ),
+                    const Gap(22),
+                    if (_isChecked) ...[
+                      BibleGlassCard(
+                        borderColor: _accuracy >= 90
+                            ? BibleColors.success
+                            : BibleColors.gold,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _accuracy >= 90
+                                  ? Icons.check_circle_rounded
+                                  : Icons.info_outline_rounded,
+                              color: _accuracy >= 90
+                                  ? BibleColors.success
+                                  : BibleColors.gold,
+                            ),
+                            const Gap(12),
+                            Text(
+                              '정확도: ${_accuracy.toStringAsFixed(1)}%',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: _accuracy >= 90
+                                    ? BibleColors.success
+                                    : BibleColors.gold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const Gap(16),
+                      const Gap(20),
                     ],
-                    const Text(
-                      '위 구절을 암기하여 아래에 입력하세요.',
-                      style: TextStyle(
-                        color: AppTheme.kNavy,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _checkAccuracy,
+                        icon: const Icon(Icons.fact_check_outlined),
+                        label: const Text('정확도 확인하기'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BibleColors.gold,
+                          foregroundColor: BibleColors.ink,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const Gap(32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '내 암송',
-                  style: TextStyle(
-                    color: AppTheme.kNavy,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                MicButton(onResult: _setSpeechInput),
-              ],
-            ),
-            const Gap(8),
-            TextField(
-              controller: _inputCtrl,
-              maxLines: 8,
-              decoration: InputDecoration(
-                hintText: '여기에 말씀을 입력하세요...',
-                fillColor: Colors.grey.shade50,
-                contentPadding: const EdgeInsets.all(20),
-              ),
-              onChanged: (_) {
-                if (_isChecked) setState(() => _isChecked = false);
-              },
-            ),
-            const Gap(24),
-            if (_isChecked) ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                decoration: BoxDecoration(
-                  color: _accuracy >= 90
-                      ? Colors.green.shade50
-                      : Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _accuracy >= 90
-                        ? Colors.green.shade200
-                        : Colors.orange.shade200,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _accuracy >= 90
-                          ? Icons.check_circle_rounded
-                          : Icons.info_outline_rounded,
-                      color: _accuracy >= 90 ? Colors.green : Colors.orange,
-                    ),
-                    const Gap(12),
-                    Text(
-                      '정확도: ${_accuracy.toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _accuracy >= 90
-                            ? Colors.green.shade800
-                            : Colors.orange.shade800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(24),
-            ],
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _checkAccuracy,
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('정확도 확인하기',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

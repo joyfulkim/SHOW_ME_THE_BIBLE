@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../core/app_shell.dart';
 import '../../main.dart';
 
 import '../../core/supabase_client.dart';
@@ -125,9 +126,8 @@ class FinalResultScreen extends ConsumerWidget {
     final rankingsAsync = ref.watch(finalRankingsProvider(sessionId));
     final sessionAsync = ref.watch(gameSessionStreamProvider(sessionId));
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
+    return BiblePageFrame(
+      child: SafeArea(
         child: sessionAsync.when(
           data: (session) {
             if (session == null) return const SizedBox.shrink();
@@ -139,49 +139,70 @@ class FinalResultScreen extends ConsumerWidget {
             // 아직 채점이 진행 중이라면 (관리자 제외)
             if (!session.gradingCompleted && !isAdmin) {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('⚖️', style: TextStyle(fontSize: 64)),
-                    const Gap(24),
-                    const Text(
-                      '최종 채점이 진행 중입니다.',
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.kNavy),
-                    ),
-                    const Gap(8),
-                    const Text(
-                      '관리자가 모든 채점을 완료할 때까지\n잠시만 기다려주세요...',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black45),
-                    ),
-                    const Gap(32),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/mode-selection'),
-                        icon: const Icon(Icons.home),
-                        label: const Text('홈으로'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 52),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: BibleCreamCard(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.fact_check_outlined,
+                          size: 62,
+                          color: BibleColors.goldDark,
                         ),
-                      ),
+                        const Gap(24),
+                        const Text(
+                          '최종 채점이 진행 중입니다.',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: BibleColors.ink,
+                          ),
+                        ),
+                        const Gap(8),
+                        const Text(
+                          '관리자가 모든 채점을 완료할 때까지\n잠시만 기다려주세요...',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.black45),
+                        ),
+                        const Gap(32),
+                        ElevatedButton.icon(
+                          onPressed: () => context.go('/mode-selection'),
+                          icon: const Icon(Icons.home),
+                          label: const Text('홈으로'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 52),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             }
 
             return rankingsAsync.when(
               data: (rankings) => _buildResult(context, theme, rankings),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('오류: $e')),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: BibleColors.gold),
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  '오류: $e',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('세션 로딩 오류: $e')),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: BibleColors.gold),
+          ),
+          error: (e, _) => Center(
+            child: Text(
+              '세션 로딩 오류: $e',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
         ),
       ),
     );
@@ -241,7 +262,7 @@ class FinalResultScreen extends ConsumerWidget {
             ),
           ),
         ),
-        const SliverToBoxAdapter(child: Gap(48)),
+        const SliverToBoxAdapter(child: Gap(96)),
       ],
     );
   }
@@ -257,7 +278,7 @@ class FinalResultScreen extends ConsumerWidget {
           Text(
             'SHOW ME THE BIBLE',
             style: theme.textTheme.headlineSmall?.copyWith(
-              color: theme.colorScheme.primary,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
             ),
@@ -334,7 +355,7 @@ class _PodiumItem extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: AppTheme.kNavy,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
@@ -447,14 +468,14 @@ class _RankingTile extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                            Text(
-                              ranking.nickname,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: AppTheme.kNavy,
-                                fontWeight:
-                                    isMine ? FontWeight.bold : FontWeight.normal,
-                              ),
+                          Text(
+                            ranking.nickname,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: AppTheme.kNavy,
+                              fontWeight:
+                                  isMine ? FontWeight.bold : FontWeight.normal,
                             ),
+                          ),
                           if (isMine) ...[
                             const Gap(6),
                             Container(

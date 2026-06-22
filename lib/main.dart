@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router.dart';
-
+import 'core/app_shell.dart';
 
 import 'core/supabase_client.dart'; // 우리가 만든 직접 생성 클라이언트 불러오기
 
@@ -56,13 +56,13 @@ class ShowMeBibleApp extends ConsumerWidget {
 }
 
 class AppTheme {
-  // ─── 네이비 포인트 색상 팔레트 ───
-  static const kNavy = Color(0xFF1B2B6B); // 주 포인트
-  static const kNavyLight = Color(0xFF2E4BAB); // hover·보조
-  static const kNavyBg = Color(0xFFEEF1FB); // 카드 배경 연파랑
-  static const kGold = Color(0xFFD4AF37); // 구절 제목 강조
-  static const kSurface = Color(0xFFF5F6FA); // 카드/서피스 배경
-  static const kText = Color(0xFF1A1A2A); // 본문 글씨
+  // ─── 메인 화면과 맞춘 네이비/골드 팔레트 ───
+  static const kNavy = BibleColors.navy; // 주 포인트
+  static const kNavyLight = BibleColors.panelLight; // hover·보조
+  static const kNavyBg = Color(0xFFE9EEFF); // 카드 배경 연파랑
+  static const kGold = BibleColors.gold; // 구절 제목 강조
+  static const kSurface = BibleColors.cream; // 카드/서피스 배경
+  static const kText = Color(0xFF0C1B44); // 본문 글씨
 
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
@@ -75,22 +75,22 @@ class AppTheme {
           surface: kSurface,
           onSurface: kText,
         ),
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: BibleColors.navyDeep,
         // AppBar
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: kNavy,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
           elevation: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           toolbarHeight: 52, // 상단 영역 줄임
           titleTextStyle: TextStyle(
-            color: kNavy,
+            color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
           ),
-          iconTheme: IconThemeData(color: kNavy),
+          iconTheme: IconThemeData(color: Colors.white),
         ),
         // ElevatedButton
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -106,7 +106,7 @@ class AppTheme {
         ),
         // TextButton
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(foregroundColor: kNavy),
+          style: TextButton.styleFrom(foregroundColor: kGold),
         ),
         // InputDecoration
         inputDecorationTheme: InputDecorationTheme(

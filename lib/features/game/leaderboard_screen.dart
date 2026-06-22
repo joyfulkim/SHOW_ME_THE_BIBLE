@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:show_me_bible/features/auth/auth_provider.dart';
 
+import 'package:show_me_bible/core/app_shell.dart';
 import 'package:show_me_bible/main.dart';
 import '../../core/admin_config.dart';
 import '../../core/supabase_client.dart';
@@ -19,21 +20,67 @@ class LeaderboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionAsync = ref.watch(gameSessionStreamProvider(sessionId));
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('📊 실시간 현황'),
+    return BiblePageFrame(
+      bottomNavigationBar: BibleBottomNav(
+        active: 'ranking',
+        onHome: () => context.go('/mode-selection'),
+        onPractice: () => context.push('/practice-lobby'),
+        onRanking: () {},
+        onSettings: () => context.push('/settings'),
       ),
-      body: sessionAsync.when(
-        data: (session) {
-          if (session == null) return const Center(child: Text('세션 없음'));
-          return _LeaderboardBody(
-            sessionId: sessionId,
-            session: session,
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('오류: $e')),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
+              child: BibleTopBar(
+                title: '랭킹',
+                leading: BibleIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  tooltip: '뒤로',
+                  onTap: () => context.canPop()
+                      ? context.pop()
+                      : context.go('/mode-selection'),
+                ),
+                actions: [
+                  BibleIconButton(
+                    icon: Icons.home_rounded,
+                    tooltip: '홈',
+                    color: BibleColors.gold,
+                    onTap: () => context.go('/mode-selection'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: sessionAsync.when(
+                data: (session) {
+                  if (session == null) {
+                    return const Center(
+                      child: Text(
+                        '세션 없음',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+                  return _LeaderboardBody(
+                    sessionId: sessionId,
+                    session: session,
+                  );
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: BibleColors.gold),
+                ),
+                error: (e, _) => Center(
+                  child: Text(
+                    '오류: $e',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -64,71 +111,79 @@ class _LeaderboardBody extends ConsumerWidget {
     return Column(
       children: [
         // ── 라운드 헤더 ──
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-          decoration: BoxDecoration(
-            color: AppTheme.kNavyBg,
-            border: Border(
-                bottom: BorderSide(color: Colors.black.withOpacity(0.05))),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    session.isSpeedMode
-                        ? '🏆 전체 진행 현황'
-                        : 'ROUND ${session.currentRound} / ${session.totalRounds}',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppTheme.kNavy,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const Gap(4),
-                  Text(
-                    session.isSpeedMode ? '스피드 레이스 모드' : _statusLabel(session),
-                    style: const TextStyle(
-                        color: Colors.black45,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-              // 실시간 제출자 수 (스피드 모드에서는 전체 인원 수)
-              submissionsAsync.when(
-                data: (subs) {
-                  final uniqueUsers = subs.map((s) => s.userId).toSet().length;
-                  final submittedAll = subs
-                      .where((s) =>
-                          s.roundNumber == session.totalRounds && s.isFinal)
-                      .length;
-                  return Column(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
+          child: BibleGlassCard(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         session.isSpeedMode
-                            ? '$submittedAll / $uniqueUsers'
-                            : '${subs.where((s) => s.isFinal).length}',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          color: const Color(0xFF1E7D4F),
-                          fontWeight: FontWeight.bold,
+                            ? '전체 진행 현황'
+                            : 'ROUND ${session.currentRound} / ${session.totalRounds}',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
                         ),
                       ),
-                      Text(session.isSpeedMode ? '완주 인원' : '제출 완료',
-                          style: const TextStyle(
-                              color: Colors.black45, fontSize: 11)),
+                      const Gap(4),
+                      Text(
+                        session.isSpeedMode
+                            ? '스피드 레이스 모드'
+                            : _statusLabel(session),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.68),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
-                  );
-                },
-                loading: () => const CircularProgressIndicator(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            ],
+                  ),
+                ),
+                submissionsAsync.when(
+                  data: (subs) {
+                    final uniqueUsers =
+                        subs.map((s) => s.userId).toSet().length;
+                    final submittedAll = subs
+                        .where((s) =>
+                            s.roundNumber == session.totalRounds && s.isFinal)
+                        .length;
+                    return Column(
+                      children: [
+                        Text(
+                          session.isSpeedMode
+                              ? '$submittedAll / $uniqueUsers'
+                              : '${subs.where((s) => s.isFinal).length}',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: BibleColors.success,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          session.isSpeedMode ? '완주 인원' : '제출 완료',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.62),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                  loading: () => const CircularProgressIndicator(
+                    color: BibleColors.gold,
+                  ),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
         ),
-        const Divider(height: 1),
 
         // ── 참가자 목록 ──
         Expanded(
@@ -143,7 +198,7 @@ class _LeaderboardBody extends ConsumerWidget {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 116),
                 itemCount: submissions.length,
                 itemBuilder: (context, index) {
                   final submission = submissions[index];
@@ -183,15 +238,16 @@ class _LeaderboardBody extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppTheme.kNavyBg,
+            color: BibleColors.panelLight.withValues(alpha: 0.8),
             shape: BoxShape.circle,
           ),
           child: const Text('⏳', style: TextStyle(fontSize: 40)),
         ),
         const Gap(16),
-        const Text(
+        Text(
           '아직 입력 중인 참가자가 없습니다.',
-          style: TextStyle(color: Colors.black38, fontSize: 15),
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.68), fontSize: 15),
         ),
       ],
     );
@@ -247,7 +303,7 @@ class _LeaderboardBody extends ConsumerWidget {
       });
 
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 116),
       itemCount: sortedList.length,
       itemBuilder: (context, index) {
         final stats = sortedList[index];

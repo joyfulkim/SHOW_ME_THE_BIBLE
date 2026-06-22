@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
 import 'admin_provider.dart';
+import '../../core/app_shell.dart';
 import '../../main.dart';
 import '../../shared/models.dart';
 
@@ -51,43 +52,47 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
     final theme = Theme.of(context);
     final versesAsync = ref.watch(versesListProvider);
     final verseManager = ref.watch(verseManagerProvider);
-    
+
     // 이미 사용된 구절 ID 목록 가져오기
-    final usedIdsAsync = widget.sessionId != null 
+    final usedIdsAsync = widget.sessionId != null
         ? ref.watch(usedVerseIdsProvider(widget.sessionId!))
         : const AsyncData<List<int>>([]);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: BibleColors.navyDeep,
       appBar: AppBar(
-        title: Text(widget.requiredCount != null 
-            ? '📖 구절 선택 (${_selectedVerses.length}/${widget.requiredCount})'
-            : '📖 구절 선택'),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        title: Text(widget.requiredCount != null
+            ? '구절 선택 (${_selectedVerses.length}/${widget.requiredCount})'
+            : '구절 선택'),
         actions: [
           IconButton(
             onPressed: () => setState(() => _showAddForm = !_showAddForm),
             icon: Icon(
               _showAddForm ? Icons.close : Icons.add_circle,
-              color: AppTheme.kNavy,
+              color: BibleColors.gold,
               size: 28,
             ),
           ),
           if (widget.isMultiSelect)
             TextButton(
-              onPressed: (widget.requiredCount != null 
+              onPressed: (widget.requiredCount != null
                       ? _selectedVerses.length != widget.requiredCount
                       : _selectedVerses.isEmpty)
-                  ? null 
+                  ? null
                   : () => widget.onVersesSelected!(_selectedVerses),
               child: Text(
-                widget.requiredCount != null ? '완료' : '확인 (${_selectedVerses.length})',
+                widget.requiredCount != null
+                    ? '완료'
+                    : '확인 (${_selectedVerses.length})',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: (widget.requiredCount != null 
+                  color: (widget.requiredCount != null
                           ? _selectedVerses.length != widget.requiredCount
-                          : _selectedVerses.isEmpty) 
-                      ? Colors.black26 
-                      : AppTheme.kNavy,
+                          : _selectedVerses.isEmpty)
+                      ? Colors.white30
+                      : BibleColors.gold,
                 ),
               ),
             ),
@@ -109,8 +114,8 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
               decoration: InputDecoration(
                 hintText: '구절 검색 (책·내용·주제)',
                 hintStyle: const TextStyle(color: Colors.black38),
-                prefixIcon: const Icon(Icons.search, color: AppTheme.kNavy),
-                fillColor: AppTheme.kNavyBg,
+                prefixIcon: const Icon(Icons.search, color: BibleColors.ink),
+                fillColor: BibleColors.cream,
                 filled: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -144,18 +149,19 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
                     child: Text(
                       '구절이 없습니다.\n상단의 + 버튼으로 추가하세요.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black26),
+                      style: TextStyle(color: Colors.white70),
                     ),
                   );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 18),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final verse = filtered[index];
                     final isUsed = usedIds.contains(verse.id);
-                    final isSelected = _selectedVerses.any((v) => v.id == verse.id);
+                    final isSelected =
+                        _selectedVerses.any((v) => v.id == verse.id);
 
                     return _VerseCard(
                       verse: verse,
@@ -165,7 +171,8 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
                         if (widget.isMultiSelect) {
                           setState(() {
                             if (isSelected) {
-                              _selectedVerses.removeWhere((v) => v.id == verse.id);
+                              _selectedVerses
+                                  .removeWhere((v) => v.id == verse.id);
                             } else {
                               _selectedVerses.add(verse);
                             }
@@ -188,8 +195,9 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
                   },
                 );
               },
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: BibleColors.gold),
+              ),
               error: (e, _) => Center(
                 child: Text('오류: $e',
                     style: const TextStyle(color: Colors.redAccent)),
@@ -203,7 +211,7 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
 
   Widget _buildAddForm(ThemeData theme, AsyncValue<void> state) {
     return Container(
-      color: AppTheme.kNavyBg,
+      color: BibleColors.cream,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,7 +235,8 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
                       _difficulty = 3;
                     });
                   },
-                  child: const Text('취소', style: TextStyle(color: Colors.black45)),
+                  child:
+                      const Text('취소', style: TextStyle(color: Colors.black45)),
                 ),
             ],
           ),
@@ -268,7 +277,9 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
           const Gap(8),
           Row(
             children: [
-              Text('난이도: $_difficulty  ', style: const TextStyle(color: AppTheme.kNavy, fontWeight: FontWeight.bold)),
+              Text('난이도: $_difficulty  ',
+                  style: const TextStyle(
+                      color: AppTheme.kNavy, fontWeight: FontWeight.bold)),
               Expanded(
                 child: Slider(
                   value: _difficulty.toDouble(),
@@ -298,15 +309,21 @@ class _VerseSelectorScreenState extends ConsumerState<VerseSelectorScreen> {
                               reference: _refCtrl.text.trim(),
                               content: _contentCtrl.text.trim(),
                               difficulty: _difficulty,
-                              theme: _themeCtrl.text.trim().isEmpty ? null : _themeCtrl.text.trim(),
+                              theme: _themeCtrl.text.trim().isEmpty
+                                  ? null
+                                  : _themeCtrl.text.trim(),
                             );
                       } else {
-                        await ref.read(verseManagerProvider.notifier).updateVerse(
+                        await ref
+                            .read(verseManagerProvider.notifier)
+                            .updateVerse(
                               id: _editingVerse!.id,
                               reference: _refCtrl.text.trim(),
                               content: _contentCtrl.text.trim(),
                               difficulty: _difficulty,
-                              theme: _themeCtrl.text.trim().isEmpty ? null : _themeCtrl.text.trim(),
+                              theme: _themeCtrl.text.trim().isEmpty
+                                  ? null
+                                  : _themeCtrl.text.trim(),
                             );
                       }
 
@@ -362,14 +379,16 @@ class _VerseCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: isSelected 
-                ? AppTheme.kGold 
+            color: isSelected
+                ? AppTheme.kGold
                 : (isUsed ? Colors.grey.shade300 : const Color(0xFFCDD0E3)),
             width: isSelected ? 2 : 1,
           ),
         ),
         child: InkWell(
-          onTap: (isUsed && !isSelected) ? null : onTap, // 이미 사용된 구절은 선택 불가 (필요시 수정 가능)
+          onTap: (isUsed && !isSelected)
+              ? null
+              : onTap, // 이미 사용된 구절은 선택 불가 (필요시 수정 가능)
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
@@ -380,10 +399,13 @@ class _VerseCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isUsed ? Colors.grey.shade200 : AppTheme.kNavy.withOpacity(0.08),
+                        color: isUsed
+                            ? Colors.grey.shade200
+                            : AppTheme.kNavy.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -397,19 +419,24 @@ class _VerseCard extends StatelessWidget {
                     ),
                     if (isUsed)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade400,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
                           '이미 선택됨',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
                         ),
                       )
                     else if (verse.theme != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.orange.shade50,
                           borderRadius: BorderRadius.circular(6),
@@ -425,7 +452,8 @@ class _VerseCard extends StatelessWidget {
                         ),
                       ),
                     if (isSelected)
-                      const Icon(Icons.check_circle_rounded, color: AppTheme.kGold, size: 20)
+                      const Icon(Icons.check_circle_rounded,
+                          color: AppTheme.kGold, size: 20)
                     else
                       Text(stars, style: const TextStyle(fontSize: 12)),
                   ],

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_shell.dart';
 import '../../core/ui_utils.dart';
-import '../../main.dart';
 import '../../shared/models.dart';
 import '../auth/auth_provider.dart';
 import 'game_provider.dart';
@@ -21,7 +20,7 @@ class JoinSessionScreen extends ConsumerWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        
+
         // 1. 내부 내비게이션 스택이 있다면 이전 화면으로 이동
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
@@ -31,57 +30,84 @@ class JoinSessionScreen extends ConsumerWidget {
         // 2. 최상단 화면일 경우 두 번 눌러 종료 처리
         await handleDoubleTapExit(context);
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: profileAsync.when(
-            data: (profile) => Text(profile?.nickname ?? 'R_BIBLE'),
-            loading: () => const Text('로드 중...'),
-            error: (_, __) => const Text('R_BIBLE'),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.home_rounded, color: AppTheme.kNavy),
-              onPressed: () => context.go('/mode-selection'),
-              tooltip: '홈으로 이동',
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout, color: AppTheme.kNavy),
-              onPressed: () => _performLogout(context, ref),
-              tooltip: '로그아웃',
-            ),
-          ],
+      child: BiblePageFrame(
+        bottomNavigationBar: BibleBottomNav(
+          active: 'home',
+          onHome: () => context.go('/mode-selection'),
+          onPractice: () => context.push('/practice-lobby'),
+          onRanking: () => context.push('/login'),
+          onSettings: () => context.push('/settings'),
         ),
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.auto_awesome, size: 64, color: AppTheme.kNavy),
-                const Gap(16),
-                const Text(
-                  '프로젝트 참 여',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.kNavy,
-                    letterSpacing: 2,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
+                child: BibleTopBar(
+                  title: profileAsync.when(
+                    data: (profile) => profile?.nickname ?? 'R_BIBLE',
+                    loading: () => '로드 중',
+                    error: (_, __) => 'R_BIBLE',
+                  ),
+                  leading: BibleIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    tooltip: '홈으로',
+                    onTap: () => context.go('/mode-selection'),
+                  ),
+                  actions: [
+                    BibleIconButton(
+                      icon: Icons.logout_rounded,
+                      tooltip: '로그아웃',
+                      color: BibleColors.gold,
+                      onTap: () => _performLogout(context, ref),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 116),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 62,
+                          color: BibleColors.gold,
+                        ),
+                        const Gap(16),
+                        const Text(
+                          '프로젝트 참여',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const Gap(34),
+                        sessionAsync.when(
+                          data: (session) {
+                            if (session == null) {
+                              return _buildNoActiveSession(context, ref);
+                            }
+                            return _buildSessionCard(context, session);
+                          },
+                          loading: () => const CircularProgressIndicator(
+                            color: BibleColors.gold,
+                          ),
+                          error: (e, _) => Text(
+                            '오류 발생: $e',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const Gap(40),
-                sessionAsync.when(
-                  data: (session) {
-                    if (session == null) {
-                      return _buildNoActiveSession(context, ref);
-                    }
-                    return _buildSessionCard(context, session);
-                  },
-                  loading: () => const CircularProgressIndicator(),
-                  error: (e, _) => Text('오류 발생: $e'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -93,7 +119,7 @@ class JoinSessionScreen extends ConsumerWidget {
       children: [
         const Text(
           '현재 진행 중인 프로젝트가 없습니다.',
-          style: TextStyle(color: Colors.black54),
+          style: TextStyle(color: Colors.white70),
         ),
         const Gap(24),
         OutlinedButton.icon(
@@ -106,33 +132,20 @@ class JoinSessionScreen extends ConsumerWidget {
   }
 
   Widget _buildSessionCard(BuildContext context, GameSession session) {
-    return Container(
-      width: double.infinity,
+    return BibleCreamCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.kSurface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.kNavy.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.kNavyBg,
+              color: BibleColors.navy.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Text(
               '진행 중인 프로젝트',
               style: TextStyle(
-                color: AppTheme.kNavy,
+                color: BibleColors.ink,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -145,7 +158,7 @@ class JoinSessionScreen extends ConsumerWidget {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppTheme.kNavy,
+              color: BibleColors.ink,
             ),
           ),
           const Gap(12),
@@ -165,7 +178,8 @@ class JoinSessionScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 56),
               elevation: 0,
-              backgroundColor: session.status == 'finished' ? Colors.grey.shade700 : null,
+              backgroundColor:
+                  session.status == 'finished' ? Colors.grey.shade700 : null,
             ),
             child: Text(
               session.status == 'finished' ? '종료된 대회 결과 보기' : '입장하여 참여하기',
@@ -184,7 +198,9 @@ class JoinSessionScreen extends ConsumerWidget {
         title: const Text('로그아웃'),
         content: const Text('로그아웃 하시겠습니까?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('확인', style: TextStyle(color: Colors.redAccent)),

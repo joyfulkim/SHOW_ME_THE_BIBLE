@@ -37,7 +37,8 @@ class _LiveContestantViewState extends ConsumerState<LiveContestantView> {
   @override
   void initState() {
     super.initState();
-    _autoSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) => _autoSave());
+    _autoSaveTimer =
+        Timer.periodic(const Duration(seconds: 10), (_) => _autoSave());
   }
 
   @override
@@ -53,16 +54,19 @@ class _LiveContestantViewState extends ConsumerState<LiveContestantView> {
     if (!widget.session.canInput) return;
 
     final round = widget.session.currentRound;
-    
+
     // 최종 제출 여부 확인
-    final mySub = ref.read(mySubmissionProvider(widget.sessionId, round)).valueOrNull;
+    final mySub =
+        ref.read(mySubmissionProvider(widget.sessionId, round)).valueOrNull;
     if (mySub?.isFinal == true) return;
 
     final text = _textController.text;
     if (text.isEmpty) return;
 
-    final question = ref.read(currentQuestionStreamProvider(widget.sessionId, round)).valueOrNull;
-    
+    final question = ref
+        .read(currentQuestionStreamProvider(widget.sessionId, round))
+        .valueOrNull;
+
     ref.read(submissionControllerProvider.notifier).autoSave(
           sessionId: widget.sessionId,
           roundNumber: round,
@@ -99,10 +103,12 @@ class _LiveContestantViewState extends ConsumerState<LiveContestantView> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    final question = await ref.read(currentQuestionProvider(widget.sessionId, round).future);
+    final question =
+        await ref.read(currentQuestionProvider(widget.sessionId, round).future);
     if (question?.verse == null) return;
 
-    final accuracy = AccuracyCalculator.calculate(question!.verse!.content, text);
+    final accuracy =
+        AccuracyCalculator.calculate(question!.verse!.content, text);
 
     await ref.read(submissionControllerProvider.notifier).submitFinal(
           sessionId: widget.sessionId,
@@ -132,7 +138,9 @@ class _LiveContestantViewState extends ConsumerState<LiveContestantView> {
       currentQuestionStreamProvider(widget.sessionId, currentRound),
       (prev, next) {
         final question = next.valueOrNull;
-        if (question?.verse != null && _secondsRemaining == 0 && _countDownTimer == null) {
+        if (question?.verse != null &&
+            _secondsRemaining == 0 &&
+            _countDownTimer == null) {
           setState(() {
             _secondsRemaining = (question!.verse!.difficulty * 60);
           });
@@ -151,19 +159,24 @@ class _LiveContestantViewState extends ConsumerState<LiveContestantView> {
       child: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(gameSessionStreamProvider(widget.sessionId));
-          ref.invalidate(currentQuestionStreamProvider(widget.sessionId, currentRound));
+          ref.invalidate(
+              currentQuestionStreamProvider(widget.sessionId, currentRound));
           await Future.delayed(const Duration(milliseconds: 500));
         },
         child: Column(
           children: [
-            StatusBanner(session: widget.session, secondsRemaining: _secondsRemaining),
+            StatusBanner(
+                session: widget.session, secondsRemaining: _secondsRemaining),
             Expanded(
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 child: Column(
                   children: [
-                    RoundIndicator(current: currentRound, total: widget.session.totalRounds),
+                    RoundIndicator(
+                        current: currentRound,
+                        total: widget.session.totalRounds),
                     const Gap(24),
                     CurrentVerse(
                       sessionId: widget.sessionId,
@@ -179,7 +192,7 @@ class _LiveContestantViewState extends ConsumerState<LiveContestantView> {
                       currentRound: currentRound,
                       onSubmit: (s) => _handleSubmit(s, currentRound),
                     ),
-                    const Gap(40),
+                    const Gap(124),
                   ],
                 ),
               ),

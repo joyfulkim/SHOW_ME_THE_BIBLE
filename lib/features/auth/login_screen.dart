@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../core/app_shell.dart';
 import '../../main.dart';
 import '../../core/ui_utils.dart';
 import 'auth_provider.dart';
@@ -120,121 +121,123 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // 2. 최상단 화면일 경우 두 번 눌러 종료 처리
         await handleDoubleTapExit(context);
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
+      child: BiblePageFrame(
+        child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // 로고 영역
-                  const _LogoSection(),
-                  const Gap(40),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: BibleCreamCard(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // 로고 영역
+                    const _LogoSection(),
+                    const Gap(40),
 
-                  // 이메일
-                  _NavyInputField(
-                    controller: _emailCtrl,
-                    label: '이메일',
-                    hint: 'example@email.com',
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const Gap(14),
-
-                  // 닉네임 (회원가입 시만)
-                  if (_isSignUp) ...[
+                    // 이메일
                     _NavyInputField(
-                      controller: _nicknameCtrl,
-                      label: '닉네임',
-                      hint: '표시될 이름을 입력하세요',
+                      controller: _emailCtrl,
+                      label: '이메일',
+                      hint: 'example@email.com',
+                      keyboardType: TextInputType.emailAddress,
                     ),
                     const Gap(14),
-                  ],
 
-                  // 비밀번호
-                  _NavyInputField(
-                    controller: _passwordCtrl,
-                    label: '비밀번호',
-                    hint: '••••••••',
-                    obscureText: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: AppTheme.kNavy,
+                    // 닉네임 (회원가입 시만)
+                    if (_isSignUp) ...[
+                      _NavyInputField(
+                        controller: _nicknameCtrl,
+                        label: '닉네임',
+                        hint: '표시될 이름을 입력하세요',
                       ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-                  const Gap(10),
+                      const Gap(14),
+                    ],
 
-                  // 아이디/비밀번호 저장 체크박스
-                  if (!_isSignUp)
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _rememberMe,
-                            activeColor: AppTheme.kNavy,
-                            onChanged: (val) =>
-                                setState(() => _rememberMe = val ?? false),
-                          ),
+                    // 비밀번호
+                    _NavyInputField(
+                      controller: _passwordCtrl,
+                      label: '비밀번호',
+                      hint: '••••••••',
+                      obscureText: _obscurePassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppTheme.kNavy,
                         ),
-                        const Gap(8),
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => _rememberMe = !_rememberMe),
-                          child: const Text(
-                            '아이디/비밀번호 저장',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.kNavy,
-                              fontWeight: FontWeight.w500,
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
+                    const Gap(10),
+
+                    // 아이디/비밀번호 저장 체크박스
+                    if (!_isSignUp)
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _rememberMe,
+                              activeColor: AppTheme.kNavy,
+                              onChanged: (val) =>
+                                  setState(() => _rememberMe = val ?? false),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  const Gap(28),
-
-                  // 제출 버튼
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : _submit,
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                          const Gap(8),
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _rememberMe = !_rememberMe),
+                            child: const Text(
+                              '아이디/비밀번호 저장',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.kNavy,
+                                fontWeight: FontWeight.w500,
                               ),
-                            )
-                          : Text(_isSignUp ? '회원가입' : '로그인'),
-                    ),
-                  ),
-                  const Gap(12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    const Gap(28),
 
-                  // 전환 버튼
-                  TextButton(
-                    onPressed: () => setState(() => _isSignUp = !_isSignUp),
-                    child: Text(
-                      _isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입',
+                    // 제출 버튼
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _submit,
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(_isSignUp ? '회원가입' : '로그인'),
+                      ),
                     ),
-                  ),
+                    const Gap(12),
 
-                  const Gap(32),
-                  const Divider(),
-                  const Gap(12),
-                  const _LoginFooter(),
-                ],
+                    // 전환 버튼
+                    TextButton(
+                      onPressed: () => setState(() => _isSignUp = !_isSignUp),
+                      child: Text(
+                        _isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입',
+                      ),
+                    ),
+
+                    const Gap(32),
+                    const Divider(),
+                    const Gap(12),
+                    const _LoginFooter(),
+                  ],
+                ),
               ),
             ),
           ),
