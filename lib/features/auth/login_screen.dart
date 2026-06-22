@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -80,6 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await _storage.delete(key: 'saved_password');
         await _storage.write(key: 'remember_me', value: 'false');
       }
+      if (!mounted) return;
       context.go('/lobby');
     }
   }
@@ -132,7 +132,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // 로고 영역
                   const _LogoSection(),
                   const Gap(40),
-  
+
                   // 이메일
                   _NavyInputField(
                     controller: _emailCtrl,
@@ -141,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const Gap(14),
-  
+
                   // 닉네임 (회원가입 시만)
                   if (_isSignUp) ...[
                     _NavyInputField(
@@ -151,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const Gap(14),
                   ],
-  
+
                   // 비밀번호
                   _NavyInputField(
                     controller: _passwordCtrl,
@@ -187,7 +187,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const Gap(8),
                         GestureDetector(
-                          onTap: () => setState(() => _rememberMe = !_rememberMe),
+                          onTap: () =>
+                              setState(() => _rememberMe = !_rememberMe),
                           child: const Text(
                             '아이디/비밀번호 저장',
                             style: TextStyle(
@@ -200,7 +201,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ],
                     ),
                   const Gap(28),
-  
+
                   // 제출 버튼
                   SizedBox(
                     width: double.infinity,
@@ -220,7 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const Gap(12),
-  
+
                   // 전환 버튼
                   TextButton(
                     onPressed: () => setState(() => _isSignUp = !_isSignUp),
@@ -228,37 +229,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       _isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입',
                     ),
                   ),
-  
+
                   const Gap(32),
-                  // ── 테스트용 퀵 로그인 섹션 (개발 완료 시 삭제) ──
-                  if (!_isSignUp) ...[
-                    const Divider(),
-                    const Gap(16),
-                    const Text('🚀 테스트용 퀵 로그인', style: TextStyle(color: Colors.black26, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const Gap(12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        _QuickLoginButton(
-                          label: '관리자',
-                          color: AppTheme.kNavy,
-                          onTap: () => _quickLogin('asdayh@naver.com'),
-                        ),
-                        _QuickLoginButton(
-                          label: '사용자1',
-                          color: const Color(0xFF1E7D4F),
-                          onTap: () => _quickLogin('asdayh0319@gmail.com'),
-                        ),
-                        _QuickLoginButton(
-                          label: '사용자2',
-                          color: Colors.orange.shade700,
-                          onTap: () => _quickLogin('ju2046@naver.com'),
-                        ),
-                      ],
-                    ),
-                  ],
+                  const Divider(),
+                  const Gap(12),
+                  const _LoginFooter(),
                 ],
               ),
             ),
@@ -268,19 +243,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Future<void> _quickLogin(String email) async {
-    _emailCtrl.text = email;
-    _passwordCtrl.text = 'asdamk0319';
-    await _submit();
-  }
-
   String _formatError(String error) {
-    if (error.contains('Email not confirmed')) return '이메일 인증이 완료되지 않았습니다. 메일을 확인하거나 Supabase에서 Confirm User를 눌러주세요.';
-    if (error.contains('Invalid login credentials')) return '이메일 또는 비밀번호가 틀렸습니다';
+    if (error.contains('Email not confirmed')) {
+      return '이메일 인증이 완료되지 않았습니다. 메일을 확인하거나 Supabase에서 Confirm User를 눌러주세요.';
+    }
+    if (error.contains('Invalid login credentials')) {
+      return '이메일 또는 비밀번호가 틀렸습니다';
+    }
     if (error.contains('already registered')) return '이미 등록된 이메일입니다';
     if (error.contains('Password should')) return '비밀번호는 6자 이상이어야 합니다';
     if (error.contains('network_error')) return '네트워크 오류: 인터넷 연결을 확인하세요.';
     return '오류가 발생했습니다: $error';
+  }
+}
+
+class _LoginFooter extends StatelessWidget {
+  const _LoginFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '꿈을심는교회',
+          style: TextStyle(
+            color: Colors.black45,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Gap(12),
+        Expanded(
+          child: Text(
+            'Copyright © 안요한. All Rights Reserved.',
+            textAlign: TextAlign.right,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.black45,
+              fontSize: 10,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -299,7 +308,7 @@ class _LogoSection extends StatelessWidget {
             color: AppTheme.kNavy,
             boxShadow: [
               BoxShadow(
-                color: AppTheme.kNavy.withOpacity(0.25),
+                color: AppTheme.kNavy.withValues(alpha: 0.25),
                 blurRadius: 24,
                 spreadRadius: 4,
               ),
@@ -382,42 +391,3 @@ class _NavyInputField extends StatelessWidget {
     );
   }
 }
-
-class _QuickLoginButton extends StatelessWidget {
-  const _QuickLoginButton({
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(color: color.withOpacity(0.5)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
