@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/ui_utils.dart';
 import '../../main.dart';
 
 class EntryModeSelectionScreen extends StatelessWidget {
   const EntryModeSelectionScreen({super.key});
 
-  static const _ink = Color(0xFF172033);
-  static const _paper = Color(0xFFF7F8FB);
-  static const _line = Color(0xFFE0E4EF);
-  static const _teal = Color(0xFF166C70);
-  static const _posterImage = 'assets/images/splash_bg.png';
+  static const _blue = Color(0xFF164B9F);
+  static const _blueDark = Color(0xFF0E3475);
+  static const _blueSoft = Color(0xFFEAF1FF);
+  static const _mint = Color(0xFF28B486);
+  static const _ink = Color(0xFF16243A);
+  static const _muted = Color(0xFF6B7688);
+  static const _surface = Color(0xFFF3F6FC);
+  static const _line = Color(0xFFE2E8F3);
 
   @override
   Widget build(BuildContext context) {
@@ -22,58 +26,59 @@ class EntryModeSelectionScreen extends StatelessWidget {
         await handleDoubleTapExit(context);
       },
       child: Scaffold(
-        backgroundColor: _paper,
-        body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 840;
-              final horizontalPadding = isWide ? 44.0 : 20.0;
-              final previewHeight = isWide ? 640.0 : 470.0;
-
-              return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  18,
-                  horizontalPadding,
-                  24,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - 42,
-                  ),
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: _HomeCopy(
+        backgroundColor: _surface,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: Stack(
+              children: [
+                const _BlueHeader(),
+                SafeArea(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 96),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _TopIdentity(
+                                onAdminLogin: () => context.push('/login'),
+                              ),
+                              const Gap(22),
+                              _QuickActions(
                                 onJoin: () => context.push('/login'),
                                 onPractice: () =>
                                     context.push('/practice-lobby'),
-                                isWide: true,
                               ),
-                            ),
-                            const Gap(36),
-                            Expanded(
-                              child: _PreviewPanel(height: previewHeight),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _HomeCopy(
-                              onJoin: () => context.push('/login'),
-                              onPractice: () => context.push('/practice-lobby'),
-                              isWide: false,
-                            ),
-                            const Gap(24),
-                            _PreviewPanel(height: previewHeight),
-                          ],
+                              const Gap(22),
+                              _HomePanel(
+                                onJoin: () => context.push('/login'),
+                                onPractice: () =>
+                                    context.push('/practice-lobby'),
+                              ),
+                            ],
+                          ),
                         ),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                      child: _BottomDock(
+                        onJoin: () => context.push('/login'),
+                        onPractice: () => context.push('/practice-lobby'),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -81,119 +86,371 @@ class EntryModeSelectionScreen extends StatelessWidget {
   }
 }
 
-class _HomeCopy extends StatelessWidget {
-  const _HomeCopy({
-    required this.onJoin,
-    required this.onPractice,
-    required this.isWide,
-  });
-
-  final VoidCallback onJoin;
-  final VoidCallback onPractice;
-  final bool isWide;
+class _BlueHeader extends StatelessWidget {
+  const _BlueHeader();
 
   @override
   Widget build(BuildContext context) {
-    final titleSize = isWide ? 52.0 : 38.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const _Badge(label: '2026 암송대회'),
-        const Gap(26),
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: AppTheme.kGold,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.menu_book_rounded,
-            color: Colors.white,
-            size: 30,
-          ),
-        ),
-        const Gap(22),
-        Text(
-          'SHOW ME\nTHE BIBLE',
-          style: TextStyle(
-            color: EntryModeSelectionScreen._ink,
-            fontSize: titleSize,
-            height: 0.95,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Gap(18),
-        const Text(
-          '준비된 암송구절로 대회에 참여하고 혼자 연습할 수 있습니다.',
-          style: TextStyle(
-            color: Color(0xFF5A6475),
-            fontSize: 16,
-            height: 1.55,
-          ),
-        ),
-        const Gap(22),
-        const Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _Badge(label: '11개 암송구절', filled: true),
-            _Badge(label: '쓰기·말하기'),
-            _Badge(label: '실시간 대회'),
+    return Container(
+      height: 300,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            EntryModeSelectionScreen._blue,
+            EntryModeSelectionScreen._blueDark,
           ],
         ),
-        const Gap(34),
-        _ModeAction(
-          title: '대회 참가하기',
-          subtitle: '로그인 후 실시간 암송 대회로 이동',
-          icon: Icons.emoji_events_rounded,
-          accentColor: AppTheme.kGold,
-          onTap: onJoin,
+      ),
+    );
+  }
+}
+
+class _TopIdentity extends StatelessWidget {
+  const _TopIdentity({required this.onAdminLogin});
+
+  final VoidCallback onAdminLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '9:41',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Spacer(),
+            InkWell(
+              onTap: onAdminLogin,
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.36),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: Colors.white,
+                  size: 19,
+                ),
+              ),
+            ),
+          ],
         ),
-        const Gap(12),
-        _ModeAction(
-          title: '혼자 연습하기',
-          subtitle: '암송구절을 선택하고 쓰거나 말하기',
-          icon: Icons.record_voice_over_rounded,
-          accentColor: EntryModeSelectionScreen._teal,
-          onTap: onPractice,
+        const Gap(22),
+        const Text(
+          'SHOW ME',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 34,
+            height: 0.95,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const Text(
+          'THE BIBLE',
+          style: TextStyle(
+            color: Color(0xFFD8E7FF),
+            fontSize: 34,
+            height: 1,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const Gap(8),
+        Text(
+          '2026 성경 암송대회',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.78),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
   }
 }
 
-class _ModeAction extends StatelessWidget {
-  const _ModeAction({
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({
+    required this.onJoin,
+    required this.onPractice,
+  });
+
+  final VoidCallback onJoin;
+  final VoidCallback onPractice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.emoji_events_rounded,
+            label: '대회',
+            onTap: onJoin,
+          ),
+        ),
+        const Gap(12),
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.edit_note_rounded,
+            label: '연습',
+            onTap: onPractice,
+          ),
+        ),
+        const Gap(12),
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.menu_book_rounded,
+            label: '구절',
+            onTap: onPractice,
+          ),
+        ),
+        const Gap(12),
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.mic_rounded,
+            label: '말하기',
+            onTap: onPractice,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 14,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: EntryModeSelectionScreen._blue, size: 25),
+          ),
+          const Gap(8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomePanel extends StatelessWidget {
+  const _HomePanel({
+    required this.onJoin,
+    required this.onPractice,
+  });
+
+  final VoidCallback onJoin;
+  final VoidCallback onPractice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E3D74).withValues(alpha: 0.12),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  '오늘의 암송 준비',
+                  style: TextStyle(
+                    color: EntryModeSelectionScreen._ink,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: EntryModeSelectionScreen._blueSoft,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  '11구절',
+                  style: TextStyle(
+                    color: EntryModeSelectionScreen._blue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(16),
+          const _VersePreviewCard(),
+          const Gap(18),
+          _PrimaryModeCard(
+            title: '대회 참가하기',
+            subtitle: '로그인 후 실시간 암송 대회 입장',
+            icon: Icons.emoji_events_rounded,
+            color: EntryModeSelectionScreen._blue,
+            onTap: onJoin,
+          ),
+          const Gap(12),
+          _PrimaryModeCard(
+            title: '혼자 연습하기',
+            subtitle: '구절을 선택하고 쓰거나 말하기',
+            icon: Icons.record_voice_over_rounded,
+            color: EntryModeSelectionScreen._mint,
+            onTap: onPractice,
+          ),
+          const Gap(18),
+          const _FeatureStrip(),
+        ],
+      ),
+    );
+  }
+}
+
+class _VersePreviewCard extends StatelessWidget {
+  const _VersePreviewCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF203D70),
+            Color(0xFF102B59),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF102B59).withValues(alpha: 0.25),
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_stories_rounded, color: AppTheme.kGold),
+              Gap(8),
+              Text(
+                '0. 주기도문',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          Gap(12),
+          Text(
+            '하늘에 계신 우리 아버지여 이름이 거룩히 여김을 받으시오며...',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Color(0xFFD7E5FF),
+              fontSize: 13,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrimaryModeCard extends StatelessWidget {
+  const _PrimaryModeCard({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.accentColor,
+    required this.color,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color accentColor;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
-      elevation: 0,
+      color: EntryModeSelectionScreen._surface,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 84),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          constraints: const BoxConstraints(minHeight: 78),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: EntryModeSelectionScreen._line),
           ),
           child: Row(
@@ -202,43 +459,42 @@ class _ModeAction extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                child: Icon(icon, color: accentColor, size: 26),
+                child: Icon(icon, color: color, size: 25),
               ),
-              const Gap(16),
+              const Gap(14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       title,
                       style: const TextStyle(
                         color: EntryModeSelectionScreen._ink,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const Gap(5),
+                    const Gap(4),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF637083),
-                        fontSize: 14,
+                        color: EntryModeSelectionScreen._muted,
+                        fontSize: 12,
                         height: 1.35,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Gap(12),
               const Icon(
-                Icons.arrow_forward_rounded,
-                color: EntryModeSelectionScreen._ink,
-                size: 22,
+                Icons.chevron_right_rounded,
+                color: Color(0xFF9CA7BA),
               ),
             ],
           ),
@@ -248,227 +504,31 @@ class _ModeAction extends StatelessWidget {
   }
 }
 
-class _PreviewPanel extends StatelessWidget {
-  const _PreviewPanel({required this.height});
-
-  final double height;
+class _FeatureStrip extends StatelessWidget {
+  const _FeatureStrip();
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: EntryModeSelectionScreen._line),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 28,
-              offset: Offset(0, 18),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            const Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(8),
-                ),
-                child: TabBarView(
-                  physics: NeverScrollableScrollPhysics(),
-                  children: [
-                    _PosterPreview(),
-                    _PracticePreview(),
-                    _VoicePreview(),
-                  ],
-                ),
-              ),
-            ),
-            Container(
-              height: 58,
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: EntryModeSelectionScreen._line),
-                ),
-              ),
-              child: TabBar(
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: EntryModeSelectionScreen._ink,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                labelColor: Colors.white,
-                unselectedLabelColor: EntryModeSelectionScreen._ink,
-                labelStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-                tabs: const [
-                  Tab(icon: Icon(Icons.shield_rounded, size: 17), text: '대회'),
-                  Tab(icon: Icon(Icons.list_alt_rounded, size: 17), text: '연습'),
-                  Tab(icon: Icon(Icons.mic_rounded, size: 17), text: '음성'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PosterPreview extends StatelessWidget {
-  const _PosterPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF101623),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Image.asset(
-            EntryModeSelectionScreen._posterImage,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PracticePreview extends StatelessWidget {
-  const _PracticePreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF9FAFC),
-      padding: const EdgeInsets.all(18),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _PanelHeader(
-            icon: Icons.menu_book_rounded,
-            title: '암송구절',
-            tone: EntryModeSelectionScreen._teal,
-          ),
-          Gap(18),
-          _MiniVerse(index: '0', reference: '주기도문', label: '주기도문'),
-          Gap(10),
-          _MiniVerse(
-            index: '1',
-            reference: '로마서 8:1-2',
-            label: '정체성',
-          ),
-          Gap(10),
-          _MiniVerse(
-            index: '5',
-            reference: '빌립보서 4:6-7',
-            label: '불안',
-          ),
-          Spacer(),
-          _MiniProgress(label: '연습 진행', value: 0.72),
-        ],
-      ),
-    );
-  }
-}
-
-class _VoicePreview extends StatelessWidget {
-  const _VoicePreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF192033),
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _PanelHeader(
-            icon: Icons.record_voice_over_rounded,
-            title: '말하기 연습',
-            tone: AppTheme.kGold,
-            inverted: true,
-          ),
-          const Spacer(),
-          Center(
-            child: Container(
-              width: 116,
-              height: 116,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.16),
-                ),
-              ),
-              child: const Icon(
-                Icons.mic_rounded,
-                size: 56,
-                color: AppTheme.kGold,
-              ),
-            ),
-          ),
-          const Gap(24),
-          const _Waveform(),
-          const Gap(24),
-          const _MiniProgress(
-            label: '정확도',
-            value: 0.91,
-            inverted: true,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PanelHeader extends StatelessWidget {
-  const _PanelHeader({
-    required this.icon,
-    required this.title,
-    required this.tone,
-    this.inverted = false,
-  });
-
-  final IconData icon;
-  final String title;
-  final Color tone;
-  final bool inverted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: tone.withValues(alpha: inverted ? 0.18 : 0.12),
-            borderRadius: BorderRadius.circular(8),
+        Expanded(
+          child: _FeaturePill(
+            icon: Icons.spellcheck_rounded,
+            label: '정확도',
           ),
-          child: Icon(icon, color: tone, size: 22),
         ),
-        const Gap(10),
-        Text(
-          title,
-          style: TextStyle(
-            color: inverted ? Colors.white : EntryModeSelectionScreen._ink,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
+        Gap(8),
+        Expanded(
+          child: _FeaturePill(
+            icon: Icons.mic_external_on_rounded,
+            label: '음성입력',
+          ),
+        ),
+        Gap(8),
+        Expanded(
+          child: _FeaturePill(
+            icon: Icons.leaderboard_rounded,
+            label: '순위',
           ),
         ),
       ],
@@ -476,184 +536,157 @@ class _PanelHeader extends StatelessWidget {
   }
 }
 
-class _MiniVerse extends StatelessWidget {
-  const _MiniVerse({
-    required this.index,
-    required this.reference,
-    required this.label,
+class _FeaturePill extends StatelessWidget {
+  const _FeaturePill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 42,
+      decoration: BoxDecoration(
+        color: EntryModeSelectionScreen._blueSoft,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: EntryModeSelectionScreen._blue, size: 16),
+          const Gap(5),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: EntryModeSelectionScreen._blue,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BottomDock extends StatelessWidget {
+  const _BottomDock({
+    required this.onJoin,
+    required this.onPractice,
   });
 
-  final String index;
-  final String reference;
-  final String label;
+  final VoidCallback onJoin;
+  final VoidCallback onPractice;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: EntryModeSelectionScreen._line),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Text(
-            index,
-            style: const TextStyle(
-              color: AppTheme.kGold,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          const Expanded(
+            child: _DockItem(
+              icon: Icons.home_rounded,
+              label: 'Home',
+              active: true,
             ),
           ),
-          const Gap(12),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reference,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: EntryModeSelectionScreen._ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const Gap(3),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF687386),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+            child: _DockItem(
+              icon: Icons.emoji_events_outlined,
+              label: 'Contest',
+              onTap: onJoin,
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: Color(0xFF9BA3B2)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: InkWell(
+              onTap: onPractice,
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: EntryModeSelectionScreen._blue,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child:
+                    const Icon(Icons.play_arrow_rounded, color: Colors.white),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _DockItem(
+              icon: Icons.edit_note_rounded,
+              label: 'Practice',
+              onTap: onPractice,
+            ),
+          ),
+          Expanded(
+            child: _DockItem(
+              icon: Icons.admin_panel_settings_outlined,
+              label: 'Admin',
+              onTap: onJoin,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _MiniProgress extends StatelessWidget {
-  const _MiniProgress({
+class _DockItem extends StatelessWidget {
+  const _DockItem({
+    required this.icon,
     required this.label,
-    required this.value,
-    this.inverted = false,
+    this.active = false,
+    this.onTap,
   });
 
+  final IconData icon;
   final String label;
-  final double value;
-  final bool inverted;
+  final bool active;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final textColor = inverted ? Colors.white : EntryModeSelectionScreen._ink;
-    final trackColor = inverted
-        ? Colors.white.withValues(alpha: 0.16)
-        : const Color(0xFFE7EAF2);
+    final color =
+        active ? EntryModeSelectionScreen._blue : const Color(0xFF8B97AA);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              '${(value * 100).round()}%',
-              style: TextStyle(
-                color: textColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-        const Gap(8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: value,
-            minHeight: 8,
-            color: inverted ? AppTheme.kGold : EntryModeSelectionScreen._teal,
-            backgroundColor: trackColor,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Waveform extends StatelessWidget {
-  const _Waveform();
-
-  static const _bars = [28.0, 44.0, 66.0, 38.0, 84.0, 52.0, 72.0, 34.0];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 88,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          for (final height in _bars)
-            Container(
-              width: 16,
-              height: height,
-              decoration: BoxDecoration(
-                color: AppTheme.kGold,
-                borderRadius: BorderRadius.circular(8),
-              ),
+          Icon(icon, color: color, size: 20),
+          const Gap(3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: active ? FontWeight.w900 : FontWeight.w600,
             ),
+          ),
         ],
-      ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label, this.filled = false});
-
-  final String label;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: filled ? EntryModeSelectionScreen._ink : Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: filled
-              ? EntryModeSelectionScreen._ink
-              : EntryModeSelectionScreen._line,
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: filled ? Colors.white : EntryModeSelectionScreen._ink,
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }
