@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -28,7 +28,6 @@ jobs:
         with:
           flutter-version: "3.41.5"
           channel: stable
-          cache: true
 
       - name: Install dependencies
         run: flutter pub get
